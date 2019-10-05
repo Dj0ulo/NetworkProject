@@ -8,9 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-//#include <zlib.h>
-
-#define UPDC32(octet, crc) (crc_32_tab[((crc) ^ (octet)) & 0xff] ^ ((crc) >> 8))
+#include <zlib.h>
 
 typedef uint8_t bool;
 
@@ -20,7 +18,6 @@ struct __attribute__((__packed__)) pkt {
 	ptypes_t type;
 	bool tr;
 	uint8_t window;
-	bool l;
 	uint16_t length;
 	uint8_t seqnum;
 	uint32_t timestamp;
@@ -37,6 +34,13 @@ pkt_t* pkt_new()
     pkt_t* newPkt = malloc(sizeof(pkt_t));
     if(!newPkt)
         return NULL;
+    newPkt->type = 0;
+    newPkt->tr = 0;
+    newPkt->window = 0;
+    newPkt->length = 0;
+    newPkt->seqnum = 0;
+    newPkt->timestamp = 0;
+    newPkt->crc1 = 0;
     newPkt->payload = NULL;
     newPkt->crc2 = 0;
 	return newPkt;
@@ -60,16 +64,16 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     pkt_status_code psc;
 
     size_t off = 0;
-    psc = pkt_set_type(pkt, data[off] & 0b00000011);
+    psc = pkt_set_type(pkt, data[off] & 0b11000000);
     if(psc) return psc;
 
-    psc = pkt_set_tr(pkt, data[off] & 0b00000100);
+    psc = pkt_set_tr(pkt, data[off] & 0b00100000);
     if(psc) return psc;
 
     if(pkt_get_tr(pkt) != 0 && pkt_get_type(pkt) != PTYPE_DATA)
         return E_UNCONSISTENT;
 
-    psc = pkt_set_window(pkt, data[off] & 0b11111000);
+    psc = pkt_set_window(pkt, data[off] & 0b00011111);
     if(psc) return psc;
 
     uint16_t lenPL;
@@ -82,7 +86,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_seqnum(pkt, data[off += sizeLenField]);
     if(psc) return psc;
 
-    psc = pkt_set_crc1(pkt, data[off += 1] & 0b00001111);
+    psc = pkt_set_crc1(pkt, (uint32_t*)&data[off += 1]);
     if(psc) return psc;
 
     if(lenPL == 0)
@@ -94,7 +98,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_payload(pkt, &data[off += 4], lenPL);
     if(psc) return psc;
 
-    psc = pkt_set_crc2(pkt, data[off += lenPL] & 0b00001111);
+    psc = pkt_set_crc2(pkt, (uint32_t*)&data[off += lenPL]);
     if(psc) return psc;
 
     return PKT_OK;
@@ -114,9 +118,15 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
         return E_NOMEM;
     *len = predSize;
     size_t off = 0;
-    buf[off] = pkt_get_type(pkt);
-    buf[off] |= pkt_get_tr(pkt) << 2;
-    buf[off] |= pkt_get_window(pkt) << 3;
+
+    if(pkt_get_payload(pkt)!=NULL && pkt_get_length(pkt)!=0)
+        pkt_set_type(pkt, PTYPE_DATA);
+    else
+        pkt_set_type(pkt, PTYPE_ACK);
+
+    buf[off] = pkt_get_type(pkt) << 6;
+    buf[off] |= pkt_get_tr(pkt) << 5;
+    buf[off] |= pkt_get_window(pkt);
     uint8_t tab[2];
     ssize_t sizeLenField = varuint_encode(lenPL, tab, 2);
     memcpy(&buf[off += 1], tab, 2);
@@ -244,9 +254,9 @@ ssize_t varuint_decode(const uint8_t *data, const size_t len, uint16_t *retval)
         return -1;
 
     if(predLen == 1)
-        *retval = ntohs(data[0]<<7);
+        *retval = data[0];
     else{
-        uint8_t tab[2] = {data[0] >> 1u, data[1]};
+        uint8_t tab[2] = {data[0] ^ (1u<<7), data[1]};
         uint16_t ns = *((uint16_t *)tab);
         *retval = ntohs(ns);
     }
@@ -264,13 +274,13 @@ ssize_t varuint_encode(uint16_t val, uint8_t *data, const size_t len)
         uint16_t ns = htons(val);
         uint8_t *tab = (uint8_t*)&ns;
         if(predLen == 1 && len >= 1){
-            data[0] = tab[1]<<1;
+            data[0] = tab[1];
             return 1;
         }
         else if(predLen == 2 && len >= 2){
-            data[0] = tab[0]<<1;
+            data[0] = tab[0];
             data[1] = tab[1];
-            data[0] = data[0] | 1u;
+            data[0] = data[0] | (1u<<7);
             return 2;
         }
     }
@@ -279,7 +289,7 @@ ssize_t varuint_encode(uint16_t val, uint8_t *data, const size_t len)
 
 size_t varuint_len(const uint8_t *data)
 {
-    return 1 + !!(data[0] & 1u);
+    return 1 + !!(data[0] & (1u<<7));
 }
 
 

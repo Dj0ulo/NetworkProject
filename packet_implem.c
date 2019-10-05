@@ -8,7 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
+//#include <zlib.h>
 
 typedef uint8_t bool;
 
@@ -134,10 +134,16 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
         return E_LENGTH;
     buf[off += sizeLenField] = pkt_get_seqnum(pkt);
     memcpy(&buf[off += 1], &pkt->timestamp, 4);
-    memcpy(&buf[off += 4], &pkt->crc1, 4);
+
+    pkt_set_crc1(pkt, 0x50121286);//to-do crc1
+    uint32_t crc1 = htonl(pkt_get_crc1(pkt));
+    memcpy(&buf[off += 4], &crc1, 4);
     memcpy(&buf[off += 4], pkt->payload, lenPL);
-    if(lenPL>0)
-        memcpy(&buf[off += lenPL], &pkt->crc2, 4);
+    if(lenPL>0){
+        pkt_set_crc2(pkt, 0x0d4a1185);//to-do crc2
+        uint32_t crc2 = htonl(pkt_get_crc2(pkt));
+        memcpy(&buf[off += lenPL], &crc2, 4);
+    }
     return PKT_OK;
 }
 

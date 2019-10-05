@@ -28,12 +28,11 @@ int main()
     printf("Hello world!\n");
     const uint16_t x = 0x8000-1;
 
-    printBits(0x16);
-    printBits(0x0b);
-
     pkt_t * pkt = pkt_new();
     pkt_set_payload(pkt,"hello world",11);
     pkt_set_window(pkt,28);
+    pkt_set_seqnum(pkt,0x7b);
+    pkt_set_timestamp(pkt, 0x17);
 
     uint8_t buf[MAX_PACKET_SIZE];
     size_t len = MAX_PACKET_SIZE;

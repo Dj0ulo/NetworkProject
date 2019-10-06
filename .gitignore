@@ -6,3 +6,7 @@
 *.o
 *.depend
 *.exe
+receiver
+*.layout
+NetworkProject.layout
+*.cbp

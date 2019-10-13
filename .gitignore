@@ -10,3 +10,7 @@ receiver
 *.layout
 NetworkProject.layout
 *.cbp
+#packet_implem.c#
+NetworkProject.layout
+main.c.save-failed
+#packet_implem.c#

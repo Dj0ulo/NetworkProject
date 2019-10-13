@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <getopt.h>
+#include <string.h>
 
 #include "packet_interface.h"
 
@@ -36,9 +38,45 @@ void printPkt(const pkt_t* pkt){
     printf("--------------\n");
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    char *FORMAT = NULL, *HOSTNAME = NULL;
+    uint32_t PORT = 0;
+    int N_CONNEXIONS = 100;
+    char c;
+    while (argc > 1 && (c = getopt (argc, argv, "o:m:")) != -1)
+    {
+        switch (c)
+        {
+        case 'o':
+			N_CONNEXIONS = atoi(optarg);
+            break;
+        case 'm':
+            FORMAT = malloc(strlen(optarg)+1);
+            if(!FORMAT) {
+                fprintf(stderr,"ERROR allocating FORMAT\n"); return -1;
+            }
+            strcpy(FORMAT, optarg);
+            break;
+        case '?':
+			fprintf(stderr,"ERROR argument\n");
+            return -1;
+        }
+    }
+	if(optind +1 >= argc) {
+	    fprintf(stderr,"ERROR need Hostname and port\n"); return -1;
+	}
+	HOSTNAME = malloc(strlen(argv[optind])+1);
+	if(!HOSTNAME) {
+        fprintf(stderr,"ERROR allocating HOSTNAME\n"); return -1;
+    }
+    strcpy(HOSTNAME, argv[optind]);
+    PORT = atoi(argv[optind+1]);
+
+
     printf("Hello world!\n");
+    printf("%s %d - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
+
     //const uint16_t x = 0x8000-1;
 
     printBits(0x5c);
@@ -70,5 +108,7 @@ int main()
 //    free(data);
     pkt_del(pRec);
     pkt_del(pkt);
+    free(HOSTNAME);
+    free(FORMAT);
     return 0;
 }

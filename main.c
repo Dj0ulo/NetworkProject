@@ -1,47 +1,30 @@
+/*
+ *  Sources :
+ *  https://broux.developpez.com/articles/c/sockets/#L3-4-2
+ *  https://gist.github.com/jirihnidek/bf7a2363e480491da72301b228b35d5d
+ *  https://beej.us/guide/bgnet/html/multi/sockaddr_inman.html
+ *  https://www.lowtek.com/sockets/select.html
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <errno.h>
+
+#define true 1
+#define false 0
 
 #include "packet_interface.h"
-
-bool getBit(uint16_t n, uint8_t index){
-    return !!(n & (1u << index));
-}
-
-void printBits(uint16_t n){
-    printf("%d (0x%x) : ",n,n);
-    for(uint8_t i=0;i<16;i++)
-    {
-        printf("%d",getBit(n,i));
-        if((i-3)%4 == 0)
-            printf(" ");
-    }
-    printf("\n");
-}
-void printHex(const uint8_t *bytes, size_t len){
-    for(size_t i=0;i<len;i++)
-        printf("%x ",bytes[i]);
-    printf("\n");
-}
-void printPkt(const pkt_t* pkt){
-    printf("---Print packet---\n");
-    printf("type : %d\n", pkt_get_type(pkt));
-    printf("tr : %d\n", pkt_get_tr(pkt));
-    printf("window : %d\n", pkt_get_window(pkt));
-    printf("length : %d\n", pkt_get_length(pkt));
-    printf("seqnum : %d\n", pkt_get_seqnum(pkt));
-    printf("timestamp : %d\n", pkt_get_timestamp(pkt));
-    printf("crc1 : 0x%x\n", pkt_get_crc1(pkt));
-    printf("payload : %s\n", pkt_get_payload(pkt));
-    printf("crc2 : 0x%x\n", pkt_get_crc2(pkt));
-    printf("--------------\n");
-}
+#include "socket.h"
+#include "utils.h"
 
 int main(int argc, char *argv[])
 {
-    char *FORMAT = NULL, *HOSTNAME = NULL;
-    uint32_t PORT = 0;
+    printf("Hello world!\n");
+
+    char *FORMAT = NULL, *HOSTNAME = NULL, *PORT = NULL;
+    //uint16_t port = 0;
     int N_CONNEXIONS = 100;
     char c;
     while (argc > 1 && (c = getopt (argc, argv, "o:m:")) != -1)
@@ -66,38 +49,115 @@ int main(int argc, char *argv[])
 	if(optind +1 >= argc) {
 	    fprintf(stderr,"ERROR need Hostname and port\n"); return -1;
 	}
-	HOSTNAME = malloc(strlen(argv[optind])+1);
-	if(!HOSTNAME) {
-        fprintf(stderr,"ERROR allocating HOSTNAME\n"); return -1;
+
+    HOSTNAME = malloc(strlen(argv[optind])+1);
+    if(!HOSTNAME){
+        perror("HOSTNAME malloc()"); exit(errno);
     }
-    strcpy(HOSTNAME, argv[optind]);
-    PORT = atoi(argv[optind+1]);
+    strcpy(HOSTNAME,argv[optind]);
+
+    PORT = malloc(strlen(argv[optind+1])+1);
+    if(!PORT){
+        perror("PORT malloc()"); exit(errno);
+    }
+    strcpy(PORT,argv[optind+1]);
+
+    //port = atoi(argv[optind+1]);
+
+    printf("%s : %s - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
 
 
-    printf("Hello world!\n");
-    printf("%s %d - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
+    //SOCKET clients[N_CONNEXIONS];
+    SOCKET sock = 0;
+    SOCKADDR_IN6 sin6 = bind_socket(&sock, HOSTNAME, PORT);
+    char addrstr[100];
+    inet_ntop (sin6.sin6_family, &sin6.sin6_addr, addrstr, 100);
+    printf("%s : %d\n",addrstr, ntohs(sin6.sin6_port) );
+
+    if(sock == INVALID_SOCKET) {
+        perror("socket()"); exit(errno);
+    }
+
+    bool ra = true;
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ra, sizeof(ra));
+
+    fd_set fdSet;
+    TIMEVAL timeout;
+    while(true){
+        FD_ZERO(&fdSet);
+        FD_SET(sock, &fdSet);
+
+        timeout.tv_sec = 2;
+        timeout.tv_usec = 0;
+
+        int ready = select(sock + 1, &fdSet, NULL, NULL, &timeout);
+        if (ready < 0) {
+			perror("select()");   exit(EXIT_FAILURE);
+		}
+		else if (ready == 0) { //Nothing ready to read, just show that we're alive
+			printf(".");
+			fflush(stdout);
+		}
+		else if(FD_ISSET(sock,&fdSet)){
+            printf("Got something !\n");
+            //struct hostent *hostinfo = NULL;
+            SOCKADDR_IN6 *from = NULL;
+            socklen_t fromSize;
+            pkt_t *pRec = recv_pkt(sock, &from, &fromSize);
+            print_sockaddr_in6(from);
+            printPkt(pRec);
+            if(true){//pkt_get_window(pRec)>0){
+                pkt_t *pSend = pkt_new();
+                if(pkt_get_tr(pRec)){
+                    pkt_set_type(pSend, PTYPE_NACK);
+                    pkt_set_seqnum(pSend, pkt_get_seqnum(pRec));
+                }
+                else{
+                    pkt_set_type(pSend, PTYPE_ACK);
+                    pkt_set_seqnum(pSend, pkt_get_seqnum(pRec)+1);
+                }
+                pkt_set_window(pSend,1);
+                pkt_set_timestamp(pSend, pkt_get_timestamp(pRec));
+                size_t n = send_pkt(sock, pSend, from, fromSize);
+                printf("%ld bytes sent !\n",n);
+            }
+            free(from);
+            pkt_del(pRec);
+		}
+    }
+
+//    char buffer[MAX_PACKET_SIZE];
+//    struct hostent *hostinfo = NULL;
+//    SOCKADDR_IN from = { 0 };
+//    int fromsize = sizeof from;
+//
+//    if((n = recvfrom(sock, buffer, MAX_PACKET_SIZE, 0, (SOCKADDR *)&from, &fromsize)) < 0)
+//    {
+//        perror("recvfrom()");
+//        exit(errno);
+//    }
 
     //const uint16_t x = 0x8000-1;
 
-    printBits(0x5c);
-    printBits((0x5c & 0b11000000) >> 6);
-
-    pkt_t * pkt = pkt_new();
-    pkt_set_payload(pkt,"hello world",11);
-    pkt_set_window(pkt,28);
-    pkt_set_seqnum(pkt,0x7b);
-    pkt_set_timestamp(pkt, 0x17);
-
-
-    char buf[MAX_PACKET_SIZE];
-    size_t len = MAX_PACKET_SIZE;
-    printf("%d",pkt_encode(pkt, buf, &len));
-    printPkt(pkt);
-    printHex((uint8_t*)buf, len);
-
-    pkt_t *pRec = pkt_new();
-    printf("%d",pkt_decode(buf, len,pRec));
-    printPkt(pRec);
+//    printBits(0x5c);
+//    printBits((0x5c & 0b11000000) >> 6);
+//
+//    pkt_t * pkt = pkt_new();
+//    pkt_set_payload(pkt,"hello world",11);
+//    pkt_set_window(pkt,28);
+//    pkt_set_seqnum(pkt,0x7b);
+//    pkt_set_timestamp(pkt, 0x17);
+//
+//
+//    char buf[MAX_PACKET_SIZE];
+//    size_t len = MAX_PACKET_SIZE;
+//    printf("%d",pkt_encode(pkt, buf, &len));
+//    printPkt(pkt);
+//    printHex((uint8_t*)buf, len);
+//
+//    pkt_t *pRec = pkt_new();
+//    printf("%d",pkt_decode(buf, len,pRec));
+//    printPkt(pRec);
 
 //    uint8_t *data = malloc(2);
 //    printf("%u, size %ld\n",x, varuint_encode(x,data,2) );
@@ -105,10 +165,13 @@ int main(int argc, char *argv[])
 //    uint16_t ret;
 //    printf("size %ld\n",varuint_decode(data,2,&ret));
 //    printBits(ret);
-//    free(data);
-    pkt_del(pRec);
-    pkt_del(pkt);
+////    free(data);
+//    pkt_del(pRec);
+//    pkt_del(pkt);
+
+    close(sock);
     free(HOSTNAME);
+    free(PORT);
     free(FORMAT);
     return 0;
 }

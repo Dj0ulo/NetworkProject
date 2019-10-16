@@ -66,7 +66,6 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 
     size_t off = 0;
 
-    printf("oh %x\n",data[off] & 0b11000000);
     psc = pkt_set_type(pkt, (data[off] & 0b11000000) >> 6);
     if(psc) return psc;
 
@@ -92,8 +91,14 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_timestamp(pkt, *(uint32_t*)&data[off += 1]);
     if(psc) return psc;
 
-    psc = pkt_set_crc1(pkt, *(uint32_t*)&data[off += 4]);
+    uint32_t crc1Rcv = ntohl(*(uint32_t*)&data[off += 4]);
+    uint32_t testCrc1 = crc32(0L, (uint8_t*)data, off);
+    if(crc1Rcv != testCrc1) return E_CRC;
+
+    psc = pkt_set_crc1(pkt, crc1Rcv);
     if(psc) return psc;
+
+    const ssize_t lenHeader = off;
 
     if(lenPL == 0)
         return PKT_OK;
@@ -104,7 +109,11 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_payload(pkt, &data[off += 4], lenPL);
     if(psc) return psc;
 
-    psc = pkt_set_crc2(pkt, *(uint32_t*)&data[off += lenPL]);
+    uint32_t crc2Rcv = ntohl(*(uint32_t*)&data[off += lenPL]);
+    uint32_t testCrc2 = crc32(0L, (uint8_t*)data+lenHeader+4, lenPL);
+    if(crc2Rcv != testCrc2) return E_CRC;
+
+    psc = pkt_set_crc2(pkt, crc2Rcv);
     if(psc) return psc;
 
     return PKT_OK;
@@ -126,7 +135,7 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     *len = predSize;
     size_t off = 0;
 
-	ptypes_t type = PTYPE_ACK;
+	ptypes_t type = pkt_get_type(pkt);
     if(pkt_get_payload(pkt)!=NULL && pkt_get_length(pkt)!=0)
         type = PTYPE_DATA;
 

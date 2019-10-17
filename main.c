@@ -12,18 +12,18 @@
 #include <string.h>
 #include <errno.h>
 
-#define true 1
-#define false 0
-
 #include "packet_interface.h"
 #include "socket.h"
 #include "utils.h"
+
+
+char *FORMAT = NULL;
 
 int main(int argc, char *argv[])
 {
     printf("Hello world!\n");
 
-    char *FORMAT = NULL, *HOSTNAME = NULL, *PORT = NULL;
+    char, *HOSTNAME = NULL, *PORT = NULL;
     //uint16_t port = 0;
     int N_CONNEXIONS = 100;
     char c;
@@ -106,15 +106,19 @@ int main(int argc, char *argv[])
             pkt_t *pRec = recv_pkt(sock, &from, &fromSize);
             print_sockaddr_in6(from);
             printPkt(pRec);
+            uint8_t seqnum = pkt_get_seqnum(pRec);
             if(true){//pkt_get_window(pRec)>0){
                 pkt_t *pSend = pkt_new();
                 if(pkt_get_tr(pRec)){
                     pkt_set_type(pSend, PTYPE_NACK);
-                    pkt_set_seqnum(pSend, pkt_get_seqnum(pRec));
+                    pkt_set_seqnum(pSend, seqnum);
                 }
                 else{
                     pkt_set_type(pSend, PTYPE_ACK);
-                    pkt_set_seqnum(pSend, pkt_get_seqnum(pRec)+1);
+//                    if(seqnum == 3)
+//                        pkt_set_seqnum(pSend, seqnum);
+//                    else
+                        pkt_set_seqnum(pSend, seqnum+1);
                 }
                 pkt_set_window(pSend,1);
                 pkt_set_timestamp(pSend, pkt_get_timestamp(pRec));

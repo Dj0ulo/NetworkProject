@@ -1,11 +1,19 @@
 #include "packet_interface.h"
 
+/* Extra #includes */
+//#ifdef WIN32
+//#include <winsock.h>
+//#elif UNIX
 #include <arpa/inet.h>
+//#endif // WIN32
 
 #include <stdlib.h>
 #include <string.h>
-#include <zlib.h>
+//#include <zlib.h>
 
+typedef uint8_t bool;
+
+#define bytearray char*
 
 struct __attribute__((__packed__)) pkt {
 	ptypes_t type;
@@ -33,6 +41,7 @@ pkt_t* pkt_new()
     newPkt->length = 0;
     newPkt->seqnum = 0;
     newPkt->timestamp = 0;
+
     newPkt->crc1 = 0;
     newPkt->payload = NULL;
     newPkt->crc2 = 0;
@@ -57,17 +66,16 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     pkt_status_code psc;
 
     size_t off = 0;
-
-    psc = pkt_set_type(pkt, (data[off] & 0b11000000) >> 6);
+    psc = pkt_set_type(pkt, data[off] & 0b11000000);
     if(psc) return psc;
 
-    psc = pkt_set_tr(pkt, (data[off] & 0b00100000) >> 5);
+    psc = pkt_set_tr(pkt, data[off] & 0b00100000);
     if(psc) return psc;
 
     if(pkt_get_tr(pkt) != 0 && pkt_get_type(pkt) != PTYPE_DATA)
         return E_UNCONSISTENT;
 
-    psc = pkt_set_window(pkt, (data[off] & 0b00011111));
+    psc = pkt_set_window(pkt, data[off] & 0b00011111);
     if(psc) return psc;
 
     uint16_t lenPL;
@@ -80,17 +88,8 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_seqnum(pkt, data[off += sizeLenField]);
     if(psc) return psc;
 
-    psc = pkt_set_timestamp(pkt, *(uint32_t*)&data[off += 1]);
+    psc = pkt_set_crc1(pkt, (uint32_t*)&data[off += 1]);
     if(psc) return psc;
-
-    uint32_t crc1Rcv = ntohl(*(uint32_t*)&data[off += 4]);
-    uint32_t testCrc1 = crc32(0L, (uint8_t*)data, off);
-    if(crc1Rcv != testCrc1) return E_CRC;
-
-    psc = pkt_set_crc1(pkt, crc1Rcv);
-    if(psc) return psc;
-
-    const ssize_t lenHeader = off;
 
     if(lenPL == 0)
         return PKT_OK;
@@ -101,11 +100,7 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_payload(pkt, &data[off += 4], lenPL);
     if(psc) return psc;
 
-    uint32_t crc2Rcv = ntohl(*(uint32_t*)&data[off += lenPL]);
-    uint32_t testCrc2 = crc32(0L, (uint8_t*)data+lenHeader+4, lenPL);
-    if(crc2Rcv != testCrc2) return E_CRC;
-
-    psc = pkt_set_crc2(pkt, crc2Rcv);
+    psc = pkt_set_crc2(pkt, (uint32_t*)&data[off += lenPL]);
     if(psc) return psc;
 
     return PKT_OK;
@@ -114,11 +109,10 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
     const uint16_t lenPL = pkt_get_length(pkt);
-    const ssize_t lenHeader = predict_header_length(pkt);
-
-    if(lenHeader == -1)
+    ssize_t predSize = predict_header_length(pkt);
+    if(predSize == -1)
         return E_LENGTH;
-    ssize_t predSize = lenHeader + 4;//size crc1
+    predSize += 4;//size crc1
     if(lenPL>0)
         predSize += lenPL + 4;//size crc2
 
@@ -127,11 +121,12 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     *len = predSize;
     size_t off = 0;
 
-	ptypes_t type = pkt_get_type(pkt);
     if(pkt_get_payload(pkt)!=NULL && pkt_get_length(pkt)!=0)
-        type = PTYPE_DATA;
+        pkt_set_type(pkt, PTYPE_DATA);
+    else
+        pkt_set_type(pkt, PTYPE_ACK);
 
-    buf[off] = type << 6;
+    buf[off] = pkt_get_type(pkt) << 6;
     buf[off] |= pkt_get_tr(pkt) << 5;
     buf[off] |= pkt_get_window(pkt);
     uint8_t tab[2];
@@ -142,12 +137,13 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     buf[off += sizeLenField] = pkt_get_seqnum(pkt);
     memcpy(&buf[off += 1], &pkt->timestamp, 4);
 
-    uint32_t crc1 = htonl(crc32(0L, (uint8_t*)buf, lenHeader));
-
+    pkt_set_crc1(pkt, 0x50121286);//to-do crc1
+    uint32_t crc1 = htonl(pkt_get_crc1(pkt));
     memcpy(&buf[off += 4], &crc1, 4);
     memcpy(&buf[off += 4], pkt->payload, lenPL);
     if(lenPL>0){
-        uint32_t crc2 = htonl(crc32(0L, (uint8_t*)buf+lenHeader+4, lenPL));
+        pkt_set_crc2(pkt, 0x0d4a1185);//to-do crc2
+        uint32_t crc2 = htonl(pkt_get_crc2(pkt));
         memcpy(&buf[off += lenPL], &crc2, 4);
     }
     return PKT_OK;

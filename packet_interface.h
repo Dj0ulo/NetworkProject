@@ -6,7 +6,7 @@
 #include <stdio.h>  /* ssize_t */
 #include <sys/types.h>
 
-typedef uint8_t bool;
+#include "utils.h"
 
 /* Raccourci pour struct pkt */
 typedef struct pkt pkt_t;

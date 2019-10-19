@@ -22,17 +22,11 @@
 		<Linker>
 			<Add library="C:/Program Files (x86)/CodeBlocks/MinGW/lib/libwsock32.a" />
 		</Linker>
-		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\socket.c">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\socket.h">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\utils.c">
+		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\connexion.c">
 			<Option compilerVar="CC" />
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\utils.h">
+		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\connexion.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="main.c">
@@ -42,6 +36,19 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="packet_interface.h" />
+		<Unit filename="socket.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="socket.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="utils.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="utils.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />

@@ -12,7 +12,7 @@
 #include <unistd.h> /* close */
 #include <netdb.h> /* gethostbyname */
 
-#include "packet_interface.h"
+#include "packet.h"
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR -1
@@ -26,6 +26,7 @@ typedef struct addrinfo ADDRINFO;
 typedef struct in6_addr IN6_ADDR;
 typedef struct timeval TIMEVAL;
 
+void print_sockaddr_in6(const SOCKADDR_IN6 *sin6);
 void set_socket_non_blocking(SOCKET sock);
 SOCKADDR_IN6 bind_socket(SOCKET *sock, const char * hostname, const char * port);
 pkt_t* recv_pkt(SOCKET sock, SOCKADDR_IN6** from, socklen_t *fromSize);

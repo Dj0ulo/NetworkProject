@@ -11,19 +11,23 @@
 #include <getopt.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
-#include "packet_interface.h"
+#include "packet.h"
 #include "socket.h"
+#include "cons_manage.h"
 #include "utils.h"
 
-
+SOCKET sock = 0;
 char *FORMAT = NULL;
 
 int main(int argc, char *argv[])
 {
     printf("Hello world!\n");
+    srand(time(NULL));
+    startClock();
 
-    char, *HOSTNAME = NULL, *PORT = NULL;
+    char *HOSTNAME = NULL, *PORT = NULL;
     //uint16_t port = 0;
     int N_CONNEXIONS = 100;
     char c;
@@ -52,30 +56,27 @@ int main(int argc, char *argv[])
 
     HOSTNAME = malloc(strlen(argv[optind])+1);
     if(!HOSTNAME){
-        perror("HOSTNAME malloc()"); exit(errno);
+        fprintf(stderr,"HOSTNAME malloc()"); exit(errno);
     }
     strcpy(HOSTNAME,argv[optind]);
 
     PORT = malloc(strlen(argv[optind+1])+1);
     if(!PORT){
-        perror("PORT malloc()"); exit(errno);
+        fprintf(stderr,"PORT malloc()"); exit(errno);
     }
     strcpy(PORT,argv[optind+1]);
 
-    //port = atoi(argv[optind+1]);
+    //printf("%s : %s - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
+    malloc_connections(N_CONNEXIONS);
 
-    printf("%s : %s - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
 
-
-    //SOCKET clients[N_CONNEXIONS];
-    SOCKET sock = 0;
     SOCKADDR_IN6 sin6 = bind_socket(&sock, HOSTNAME, PORT);
     char addrstr[100];
     inet_ntop (sin6.sin6_family, &sin6.sin6_addr, addrstr, 100);
     printf("%s : %d\n",addrstr, ntohs(sin6.sin6_port) );
 
     if(sock == INVALID_SOCKET) {
-        perror("socket()"); exit(errno);
+        fprintf(stderr,"socket()"); exit(errno);
     }
 
     bool ra = true;
@@ -83,7 +84,8 @@ int main(int argc, char *argv[])
 
     fd_set fdSet;
     TIMEVAL timeout;
-    while(true){
+    while(true)
+    {
         FD_ZERO(&fdSet);
         FD_SET(sock, &fdSet);
 
@@ -92,42 +94,18 @@ int main(int argc, char *argv[])
 
         int ready = select(sock + 1, &fdSet, NULL, NULL, &timeout);
         if (ready < 0) {
-			perror("select()");   exit(EXIT_FAILURE);
+			fprintf(stderr,"select()");   exit(EXIT_FAILURE);
 		}
-		else if (ready == 0) { //Nothing ready to read, just show that we're alive
-			printf(".");
-			fflush(stdout);
-		}
+		else if(ready == 0)
+        {
+            //fprintf(stderr,CYAN"Time : %ld s.\n"WHITE, millis()/1000);//fprintf(stderr,".");
+        }
 		else if(FD_ISSET(sock,&fdSet)){
             printf("Got something !\n");
-            //struct hostent *hostinfo = NULL;
-            SOCKADDR_IN6 *from = NULL;
-            socklen_t fromSize;
-            pkt_t *pRec = recv_pkt(sock, &from, &fromSize);
-            print_sockaddr_in6(from);
-            printPkt(pRec);
-            uint8_t seqnum = pkt_get_seqnum(pRec);
-            if(true){//pkt_get_window(pRec)>0){
-                pkt_t *pSend = pkt_new();
-                if(pkt_get_tr(pRec)){
-                    pkt_set_type(pSend, PTYPE_NACK);
-                    pkt_set_seqnum(pSend, seqnum);
-                }
-                else{
-                    pkt_set_type(pSend, PTYPE_ACK);
-//                    if(seqnum == 3)
-//                        pkt_set_seqnum(pSend, seqnum);
-//                    else
-                        pkt_set_seqnum(pSend, seqnum+1);
-                }
-                pkt_set_window(pSend,1);
-                pkt_set_timestamp(pSend, pkt_get_timestamp(pRec));
-                size_t n = send_pkt(sock, pSend, from, fromSize);
-                printf("%ld bytes sent !\n",n);
-            }
-            free(from);
-            pkt_del(pRec);
+            handle_reception();
 		}
+
+		check_times_out();
     }
 
 //    char buffer[MAX_PACKET_SIZE];
@@ -137,7 +115,7 @@ int main(int argc, char *argv[])
 //
 //    if((n = recvfrom(sock, buffer, MAX_PACKET_SIZE, 0, (SOCKADDR *)&from, &fromsize)) < 0)
 //    {
-//        perror("recvfrom()");
+//        fprintf(stderr,"recvfrom()");
 //        exit(errno);
 //    }
 
@@ -172,10 +150,12 @@ int main(int argc, char *argv[])
 ////    free(data);
 //    pkt_del(pRec);
 //    pkt_del(pkt);
-
+    free_connections();
     close(sock);
     free(HOSTNAME);
     free(PORT);
-    free(FORMAT);
+    if(FORMAT)
+        free(FORMAT);
+
     return 0;
 }

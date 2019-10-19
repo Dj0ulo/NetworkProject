@@ -1,8 +1,9 @@
 #ifndef UTILS_H_INCLUDED
 #define UTILS_H_INCLUDED
 
-#include "packet_interface.h"
-#include "socket.h"
+#include <stdint.h> /* uintx_t */
+#include <stdio.h>  /* ssize_t */
+#include <sys/time.h>
 
 #define RED     "\x1b[31m"
 #define GREEN   "\x1b[32m"
@@ -17,12 +18,17 @@ typedef uint8_t bool;
 #define false 0
 #define bytearray char*
 
+#define err fprintf(stderr, RED "[Error] "
+#define ne WHITE"\n");
+#define ner ne; return -1;
+
 #define NB_MAX_CHAR_UINT32 10 //2 ^ 32 = 4,294,967,296 => 10 digits
 
 bool getBit(uint16_t n, uint8_t index);
 void printBits(uint16_t n);
 void printHex(const uint8_t *bytes, size_t len);
-void printPkt(const pkt_t* pkt);
-void print_sockaddr_in6(const SOCKADDR_IN6 *sin6);
+int write_bytes(int fd, const char* bytes, const size_t size);
+void startClock();
+time_t millis();
 
 #endif // UTILS_H_INCLUDED

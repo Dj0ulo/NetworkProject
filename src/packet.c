@@ -1,34 +1,11 @@
-#include "packet_interface.h"
+#include "packet.h"
 
-/* Extra #includes */
-//#ifdef WIN32
-//#include <winsock.h>
-//#elif UNIX
 #include <arpa/inet.h>
-//#endif // WIN32
 
 #include <stdlib.h>
 #include <string.h>
-//#include <zlib.h>
+#include <zlib.h>
 
-typedef uint8_t bool;
-
-#define bytearray char*
-
-struct __attribute__((__packed__)) pkt {
-	ptypes_t type;
-	bool tr;
-	uint8_t window;
-	uint16_t length;
-	uint8_t seqnum;
-	uint32_t timestamp;
-	uint32_t crc1;
-	bytearray payload;
-	uint32_t crc2;
-};
-
-/* Extra code */
-/* Your code will be inserted here */
 
 pkt_t* pkt_new()
 {
@@ -41,7 +18,6 @@ pkt_t* pkt_new()
     newPkt->length = 0;
     newPkt->seqnum = 0;
     newPkt->timestamp = 0;
-
     newPkt->crc1 = 0;
     newPkt->payload = NULL;
     newPkt->crc2 = 0;
@@ -59,6 +35,34 @@ void pkt_del(pkt_t *pkt)
 	free(pkt);
 }
 
+void pkt_print(const pkt_t* pkt)
+{
+    printf("---" GREEN "Print packet" WHITE "---\n");
+    if(!pkt)
+        printf("(NULL)\n");
+    else{
+        printf("seqnum : " CYAN "%d" WHITE, pkt_get_seqnum(pkt));
+        printf(" | type : %d | ", pkt_get_type(pkt));
+        printf("tr : %d | ", pkt_get_tr(pkt));
+        printf("window : %d | ", pkt_get_window(pkt));
+        printf("timestamp : %x\n", pkt_get_timestamp(pkt));
+//        printf("crc1 : 0x%x\n", pkt_get_crc1(pkt));
+        printf("payload (len : " BLUE "%d" WHITE " bytes)", pkt_get_length(pkt));
+        //printf(":\n%s", pkt_get_payload(pkt));
+        printf("\n");
+//        printf("crc2 : 0x%x\n", pkt_get_crc2(pkt));
+    }
+    printf("------------------\n");
+}
+int pkt_copy(pkt_t* dst, const pkt_t* src)
+{
+    if(!dst)
+        return -1;
+    memcpy(dst, src, sizeof(pkt_t));
+    pkt_set_payload(dst, pkt_get_payload(src), pkt_get_length(src));
+    return 0;
+}
+
 pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 {
     if(len < 7+4)
@@ -66,16 +70,17 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     pkt_status_code psc;
 
     size_t off = 0;
-    psc = pkt_set_type(pkt, data[off] & 0b11000000);
+
+    psc = pkt_set_type(pkt, (data[off] & 0b11000000) >> 6);
     if(psc) return psc;
 
-    psc = pkt_set_tr(pkt, data[off] & 0b00100000);
+    psc = pkt_set_tr(pkt, (data[off] & 0b00100000) >> 5);
     if(psc) return psc;
 
     if(pkt_get_tr(pkt) != 0 && pkt_get_type(pkt) != PTYPE_DATA)
         return E_UNCONSISTENT;
 
-    psc = pkt_set_window(pkt, data[off] & 0b00011111);
+    psc = pkt_set_window(pkt, (data[off] & 0b00011111));
     if(psc) return psc;
 
     uint16_t lenPL;
@@ -88,8 +93,17 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_seqnum(pkt, data[off += sizeLenField]);
     if(psc) return psc;
 
-    psc = pkt_set_crc1(pkt, (uint32_t*)&data[off += 1]);
+    psc = pkt_set_timestamp(pkt, *(uint32_t*)&data[off += 1]);
     if(psc) return psc;
+
+    uint32_t crc1Rcv = ntohl(*(uint32_t*)&data[off += 4]);
+    uint32_t testCrc1 = crc32(0L, (uint8_t*)data, off);
+    if(crc1Rcv != testCrc1) return E_CRC;
+
+    psc = pkt_set_crc1(pkt, crc1Rcv);
+    if(psc) return psc;
+
+    const ssize_t lenHeader = off;
 
     if(lenPL == 0)
         return PKT_OK;
@@ -100,7 +114,11 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
     psc = pkt_set_payload(pkt, &data[off += 4], lenPL);
     if(psc) return psc;
 
-    psc = pkt_set_crc2(pkt, (uint32_t*)&data[off += lenPL]);
+    uint32_t crc2Rcv = ntohl(*(uint32_t*)&data[off += lenPL]);
+    uint32_t testCrc2 = crc32(0L, (uint8_t*)data+lenHeader+4, lenPL);
+    if(crc2Rcv != testCrc2) return E_CRC;
+
+    psc = pkt_set_crc2(pkt, crc2Rcv);
     if(psc) return psc;
 
     return PKT_OK;
@@ -109,10 +127,11 @@ pkt_status_code pkt_decode(const char *data, const size_t len, pkt_t *pkt)
 pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
 {
     const uint16_t lenPL = pkt_get_length(pkt);
-    ssize_t predSize = predict_header_length(pkt);
-    if(predSize == -1)
+    const ssize_t lenHeader = predict_header_length(pkt);
+
+    if(lenHeader == -1)
         return E_LENGTH;
-    predSize += 4;//size crc1
+    ssize_t predSize = lenHeader + 4;//size crc1
     if(lenPL>0)
         predSize += lenPL + 4;//size crc2
 
@@ -121,12 +140,11 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     *len = predSize;
     size_t off = 0;
 
+	ptypes_t type = pkt_get_type(pkt);
     if(pkt_get_payload(pkt)!=NULL && pkt_get_length(pkt)!=0)
-        pkt_set_type(pkt, PTYPE_DATA);
-    else
-        pkt_set_type(pkt, PTYPE_ACK);
+        type = PTYPE_DATA;
 
-    buf[off] = pkt_get_type(pkt) << 6;
+    buf[off] = type << 6;
     buf[off] |= pkt_get_tr(pkt) << 5;
     buf[off] |= pkt_get_window(pkt);
     uint8_t tab[2];
@@ -137,13 +155,12 @@ pkt_status_code pkt_encode(const pkt_t* pkt, char *buf, size_t *len)
     buf[off += sizeLenField] = pkt_get_seqnum(pkt);
     memcpy(&buf[off += 1], &pkt->timestamp, 4);
 
-    pkt_set_crc1(pkt, 0x50121286);//to-do crc1
-    uint32_t crc1 = htonl(pkt_get_crc1(pkt));
+    uint32_t crc1 = htonl(crc32(0L, (uint8_t*)buf, lenHeader));
+
     memcpy(&buf[off += 4], &crc1, 4);
     memcpy(&buf[off += 4], pkt->payload, lenPL);
     if(lenPL>0){
-        pkt_set_crc2(pkt, 0x0d4a1185);//to-do crc2
-        uint32_t crc2 = htonl(pkt_get_crc2(pkt));
+        uint32_t crc2 = htonl(crc32(0L, (uint8_t*)buf+lenHeader+4, lenPL));
         memcpy(&buf[off += lenPL], &crc2, 4);
     }
     return PKT_OK;

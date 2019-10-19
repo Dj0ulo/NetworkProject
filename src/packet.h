@@ -1,5 +1,5 @@
-#ifndef __PACKET_INTERFACE_H_
-#define __PACKET_INTERFACE_H_
+#ifndef PACKET_H_INCLUDED
+#define PACKET_H_INCLUDED
 
 #include <stddef.h> /* size_t */
 #include <stdint.h> /* uintx_t */
@@ -7,9 +7,6 @@
 #include <sys/types.h>
 
 #include "utils.h"
-
-/* Raccourci pour struct pkt */
-typedef struct pkt pkt_t;
 
 /* Types de paquets */
 typedef enum {
@@ -38,6 +35,19 @@ typedef enum {
     E_UNCONSISTENT, /* Le paquet est incoherent */
 } pkt_status_code;
 
+typedef struct pkt pkt_t;
+struct __attribute__((__packed__)) pkt {
+	ptypes_t type;
+	bool tr;
+	uint8_t window;
+	uint16_t length;
+	uint8_t seqnum;
+	uint32_t timestamp;
+	uint32_t crc1;
+	bytearray payload;
+	uint32_t crc2;
+};
+
 /* Alloue et initialise une struct pkt
  * @return: NULL en cas d'erreur */
 pkt_t* pkt_new();
@@ -45,6 +55,9 @@ pkt_t* pkt_new();
  * ressources associees
  */
 void pkt_del(pkt_t*);
+
+void pkt_print(const pkt_t* pkt);
+int pkt_copy(pkt_t* dst, const pkt_t* src);
 
 /*
  * Decode des donnees recues et cree une nouvelle structure pkt.
@@ -178,4 +191,4 @@ ssize_t varuint_predict_len(uint16_t val);
 ssize_t predict_header_length(const pkt_t *pkt);
 
 
-#endif  /* __PACKET_INTERFACE_H_ */
+#endif  /* PACKET_H_INCLUDED*/

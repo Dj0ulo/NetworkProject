@@ -10,6 +10,18 @@
 #include "socket.h"
 #include "utils.h"
 
+void print_sockaddr_in6(const SOCKADDR_IN6 *sin6)
+{
+    printf(CYAN"sockaddr_in6" WHITE " : ");
+    if(!sin6)
+        printf(RED"(NULL)\n"WHITE);
+    else{
+        char addrstr[INET6_ADDRSTRLEN];
+        inet_ntop (sin6->sin6_family, &sin6->sin6_addr, addrstr, INET6_ADDRSTRLEN);
+        printf (RED "%s" WHITE,addrstr);
+        printf(" : " MAGENTA "%d" WHITE" \n", sin6->sin6_port);
+    }
+}
 
 void set_socket_non_blocking(SOCKET sock){
     int opts = fcntl(sock,F_GETFL);

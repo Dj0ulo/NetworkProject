@@ -57,10 +57,10 @@ int handle_reception()
     pkt_t *pRec = recv_pkt(sock, &from, &fromSize);
     if(pRec==NULL){err "handle_reception() : Packet unconsistent received\n" ner}
 
-    if(rand()%4==0){
+    /*if(rand()%4==0){
         fprintf(stderr,YELLOW "FAKE NOT RECV\n" WHITE);
         return 0;
-    }
+    }*/
     //print
     print_sockaddr_in6(from);
 

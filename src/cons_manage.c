@@ -27,9 +27,7 @@ int get_index_client(const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 {
     int i=0;
     for(;i<NB_CONNECTIONS;i++){
-        if(cons[i]==NULL)
-            return -1;
-        if(cons[i]->addrSize == addrSize)
+        if(cons[i] && cons[i]->addrSize == addrSize)
             if(memcmp(cons[i]->addr, addr, (size_t)addrSize) == 0)
                 return i;
     }
@@ -62,15 +60,16 @@ int handle_reception()
         return 0;
     }*/
     //print
-    print_sockaddr_in6(from);
 
     int indClient = get_index_client(from, fromSize);
-    //printf("--> Index client : "YELLOW"%d\n"WHITE,indClient);
+    printf("Connection : "YELLOW"%d - "WHITE,indClient);
+    print_sockaddr_in6(from);
 
     pkt_print(pRec);
 
     if(indClient == -1){
         indClient = add_connection(from, fromSize);
+        printf("New connection id : %d\n", indClient);
     }
     if(indClient == -1){err "handle_reception() : Too many connexions\n" ner}
     int r = co_handle_new_pkt(cons[indClient],pRec);

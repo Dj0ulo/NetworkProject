@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     //uint16_t port = 0;
     int N_CONNEXIONS = 100;
     char c;
-    while (argc > 1 && (c = getopt (argc, argv, "o:m:")) != -1)
+    while (argc > 1 && (c = getopt (argc, argv, "o:m:")) != (char)-1)
     {
         switch (c)
         {
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     }
     strcpy(PORT,argv[optind+1]);
 
-    //printf("%s : %s - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
+    printf("%s : %s - N: %d\n",HOSTNAME, PORT, N_CONNEXIONS);
     malloc_connections(N_CONNEXIONS);
 
 
@@ -82,9 +82,11 @@ int main(int argc, char *argv[])
     bool ra = true;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ra, sizeof(ra));
 
+    int wait = 3;
+
     fd_set fdSet;
     TIMEVAL timeout;
-    while(true)
+    while(wait>0)
     {
         FD_ZERO(&fdSet);
         FD_SET(sock, &fdSet);
@@ -98,29 +100,23 @@ int main(int argc, char *argv[])
 		}
 		else if(ready == 0)
         {
+            printf("Wait before exit : %d\n",wait);
+            wait--;
             //fprintf(stderr,CYAN"Time : %ld s.\n"WHITE, millis()/1000);//fprintf(stderr,".");
         }
 		else if(FD_ISSET(sock,&fdSet)){
             printf("Got something !\n");
             handle_reception();
+            wait = 3;
 		}
 
 		check_times_out();
     }
 
-//    char buffer[MAX_PACKET_SIZE];
-//    struct hostent *hostinfo = NULL;
-//    SOCKADDR_IN from = { 0 };
-//    int fromsize = sizeof from;
+
+
+//    const uint16_t x = 0x8000-1;
 //
-//    if((n = recvfrom(sock, buffer, MAX_PACKET_SIZE, 0, (SOCKADDR *)&from, &fromsize)) < 0)
-//    {
-//        fprintf(stderr,"recvfrom()");
-//        exit(errno);
-//    }
-
-    //const uint16_t x = 0x8000-1;
-
 //    printBits(0x5c);
 //    printBits((0x5c & 0b11000000) >> 6);
 //
@@ -134,22 +130,25 @@ int main(int argc, char *argv[])
 //    char buf[MAX_PACKET_SIZE];
 //    size_t len = MAX_PACKET_SIZE;
 //    printf("%d",pkt_encode(pkt, buf, &len));
-//    printPkt(pkt);
+//    pkt_print(pkt);
 //    printHex((uint8_t*)buf, len);
 //
 //    pkt_t *pRec = pkt_new();
 //    printf("%d",pkt_decode(buf, len,pRec));
-//    printPkt(pRec);
-
+//    pkt_print(pRec);
+//
 //    uint8_t *data = malloc(2);
 //    printf("%u, size %ld\n",x, varuint_encode(x,data,2) );
 //    printBits(*(uint16_t*)data);
 //    uint16_t ret;
 //    printf("size %ld\n",varuint_decode(data,2,&ret));
 //    printBits(ret);
-////    free(data);
+//    free(data);
 //    pkt_del(pRec);
 //    pkt_del(pkt);
+
+
+    printf("Free and exit\n");
     free_connections();
     close(sock);
     free(HOSTNAME);

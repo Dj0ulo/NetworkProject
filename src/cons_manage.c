@@ -11,7 +11,7 @@ extern SOCKET sock;
 
 co_t** malloc_connections(const int nbConnections)
 {
-    cons = malloc(nbConnections * sizeof(co_t*));
+    cons = calloc(nbConnections, sizeof(co_t*));
     if(cons)
         NB_CONNECTIONS = nbConnections;
     else
@@ -20,8 +20,16 @@ co_t** malloc_connections(const int nbConnections)
 }
 void free_connections()
 {
-    for(int i=0;i<NB_CONNECTIONS;i++)
-        co_free(cons[i]);
+    if(cons)
+    {
+        for(int i=0;i<NB_CONNECTIONS;i++)
+            if(cons[i] != NULL){
+                co_free(cons[i]);
+                free(cons[i]);
+            }
+        free(cons);
+    }
+
 }
 int get_index_client(const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 {
@@ -50,40 +58,57 @@ int add_connection(const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 }
 int handle_reception()
 {
+    int ret = 0;
     SOCKADDR_IN6 *from = NULL;
     socklen_t fromSize;
     pkt_t *pRec = recv_pkt(sock, &from, &fromSize);
-    if(pRec==NULL){err "handle_reception() : Packet unconsistent received\n" ner}
-
-    /*if(rand()%4==0){
-        fprintf(stderr,YELLOW "FAKE NOT RECV\n" WHITE);
-        return 0;
-    }*/
-    //print
-
-    int indClient = get_index_client(from, fromSize);
-    printf("Connection : "YELLOW"%d - "WHITE,indClient);
-    print_sockaddr_in6(from);
-
-    pkt_print(pRec);
-
-    if(indClient == -1){
-        indClient = add_connection(from, fromSize);
-        printf("New connection id : %d\n", indClient);
-    }
-    if(indClient == -1){err "handle_reception() : Too many connexions\n" ner}
-    int r = co_handle_new_pkt(cons[indClient],pRec);
-    if(r == -1)
-        err "handle_reception() : Unable to handle new packet" ne
-    else if(r == DONE)
+    if(pRec!=NULL)
     {
-        co_free(cons[indClient]);
-        cons[indClient] = NULL;
+        int indClient = get_index_client(from, fromSize);
+        printf("Connection : "YELLOW"%d - "WHITE,indClient);
+        print_sockaddr_in6(from);
+
+//    if(rand()%4==0){
+//        fprintf(stderr,YELLOW "FAKE NOT RECV\n" WHITE);
+//        free(from);
+//        pkt_del(pRec);
+//        return 0;
+//    }
+
+        pkt_print(pRec);
+
+        if(indClient == -1){
+            indClient = add_connection(from, fromSize);
+            printf("New connection id : %d\n", indClient);
+        }
+        if(indClient != -1)
+        {
+            int r = co_handle_new_pkt(cons[indClient],pRec);
+            if(r == -1)
+                err "handle_reception() : Unable to handle new packet" ne
+            else if(r == DONE)
+            {
+                co_free(cons[indClient]);
+                free(cons[indClient]);
+                cons[indClient] = NULL;
+            }
+        }
+        else
+        {
+            err "handle_reception() : Too many connexions\n" ne
+            ret = -1;
+        }
+    }
+    else
+    {
+        err "handle_reception() : Packet unconsistent received\n" ne
+        ret = -1;
     }
 
     free(from);
     pkt_del(pRec);
-    return 0;
+    free(pRec);
+    return ret;
 }
 void check_times_out()
 {

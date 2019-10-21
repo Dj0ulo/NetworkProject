@@ -5,6 +5,7 @@ CFLAGS += -Werror
 CFLAGS += -Wshadow
 CFLAGS += -Wextra
 CFLAGS += -fstack-protector-all
+CFLAGS += -g
 
 OBJDIR = obj
 SRCDIR = src

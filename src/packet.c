@@ -9,30 +9,17 @@
 
 pkt_t* pkt_new()
 {
-    pkt_t* newPkt = malloc(sizeof(pkt_t));
-    if(!newPkt)
-        return NULL;
-    newPkt->type = 0;
-    newPkt->tr = 0;
-    newPkt->window = 0;
-    newPkt->length = 0;
-    newPkt->seqnum = 0;
-    newPkt->timestamp = 0;
-    newPkt->crc1 = 0;
-    newPkt->payload = NULL;
-    newPkt->crc2 = 0;
-	return newPkt;
+    return calloc(1, sizeof(pkt_t));//put all to 0
 }
 
 void pkt_del(pkt_t *pkt)
 {
-    if(!pkt)
-		return;
-
-	if(pkt->payload)
-		free(pkt->payload);
-
-	free(pkt);
+    if(pkt)
+    {
+        if(pkt->payload)
+            free(pkt->payload);
+        //free(pkt);
+    }
 }
 
 void pkt_print(const pkt_t* pkt)

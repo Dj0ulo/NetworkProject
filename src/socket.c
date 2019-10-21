@@ -101,6 +101,7 @@ pkt_t* recv_pkt(SOCKET sock, SOCKADDR_IN6** from, socklen_t *fromSize)
     if((r=pkt_decode(buffer, n, pRec))!=PKT_OK){
         fprintf(stderr,"pkt_decode() : %d",r);
         pkt_del(pRec);
+        free(pRec);
         return NULL;
     }
     return pRec;

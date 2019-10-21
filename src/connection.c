@@ -9,6 +9,9 @@ extern char *FORMAT;
 
 int co_reset(co_t* co, const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 {
+    co->filename = calloc(1,1);
+    if(!co->filename)
+        return -1;
     co->addr = malloc(addrSize);
     if(!co->addr)
         return -1;
@@ -18,7 +21,10 @@ int co_reset(co_t* co, const SOCKADDR_IN6 *addr,const socklen_t addrSize)
     for(int i=0;i<MAX_WINDOW_SIZE;i++)
         co->win[i] = NULL;
 
+    pkt_del(co->lastPktRecv);
     co->lastPktRecv = pkt_new();
+
+    pkt_del(co->lastPktSend);
     co->lastPktSend = pkt_new();
     co->reqSeqnum = 0;
 
@@ -34,12 +40,18 @@ void co_free(co_t *co)
             free(co->filename);
         if(co->addr)
             free(co->addr);
-        if(co->win)
-        {
-            for(int k=0;k<MAX_WINDOW_SIZE;k++)
-                pkt_del(co->win[k]);
+
+        for(int k=0;k<MAX_WINDOW_SIZE;k++){
+            pkt_del(co->win[k]);
+            if(co->win[k])
+                free(co->win[k]);
         }
         pkt_del(co->lastPktRecv);
+        if(co->lastPktRecv)
+            free(co->lastPktRecv);
+        pkt_del(co->lastPktSend);
+        if(co->lastPktSend)
+            free(co->lastPktSend);
     }
 }
 int co_get_addr(const co_t* co, char * dst,const socklen_t size)
@@ -102,6 +114,8 @@ void print_window(const co_t* co)
 }
 int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
 {
+    pkt_del(co->lastPktRecv);
+
     if(pkt_copy(co->lastPktRecv, pkt)==-1){err "co_handle_new_pkt() : Unable to copy the packet" ner}
     if(pkt_get_tr(pkt))
     {
@@ -125,7 +139,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
 
     bool newCo = false;
     //ouverture fichier
-    if(!co->filename)
+    if(strcmp(co->filename,"") == 0)
     {
         newCo = true;
         if(!FORMAT)
@@ -138,7 +152,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
             strcpy(FORMAT, format);
         }
 
-        co->filename = malloc(strlen(FORMAT)+NB_MAX_CHAR_UINT32);
+        co->filename = realloc(co->filename, strlen(FORMAT)+NB_MAX_CHAR_UINT32);
         if(!co->filename){
             err "co_handle_new_pkt() : malloc" ner
         }
@@ -166,6 +180,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
             err "co_handle_new_pkt() : write" ner
         }
         pkt_del(co->win[ind]);
+        free(co->win[ind]);
         co->win[ind] = NULL;
         co->reqSeqnum++;
     }
@@ -211,7 +226,11 @@ int co_send_req(co_t* co)
     size_t n = send_pkt(sock, pSend, co->addr, co->addrSize);
     co->timeLastPkt = millis();
     printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
+
+    pkt_del(co->lastPktSend);
+
     pkt_copy(co->lastPktSend, pSend);
     pkt_del(pSend);
+    free(pSend);
     return 0;
 }

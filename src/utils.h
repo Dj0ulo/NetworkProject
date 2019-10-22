@@ -18,6 +18,8 @@ typedef uint8_t bool;
 #define false 0
 #define bytearray char*
 
+#define MAX_FILENAME 260
+
 #define err fprintf(stderr, RED "[Error] "
 #define ne WHITE"\n");
 #define ner ne; return -1;

@@ -35,10 +35,10 @@ int main(int argc, char *argv[])
     {
         switch (c)
         {
-        case 'o':
+        case 'm':
 			N_CONNEXIONS = atoi(optarg);
             break;
-        case 'm':
+        case 'o':
             FORMAT = malloc(strlen(optarg)+1);
             if(!FORMAT) {
                 fprintf(stderr,"ERROR allocating FORMAT\n"); return -1;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
     bool ra = true;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ra, sizeof(ra));
 
-    int wait = 3;
+    int wait = 6;
 
     fd_set fdSet;
     TIMEVAL timeout;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 		else if(FD_ISSET(sock,&fdSet)){
             printf("Got something !\n");
             handle_reception();
-            wait = 3;
+            wait = 6;
 		}
 
 		check_times_out();

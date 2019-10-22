@@ -22,17 +22,17 @@
 		<Linker>
 			<Add library="C:/Program Files (x86)/CodeBlocks/MinGW/lib/libwsock32.a" />
 		</Linker>
-		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\src\cons_manage.c">
-			<Option compilerVar="CC" />
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
-		<Unit filename="\\wsl$\Ubuntu\home\djoulo\NetworkProject\src\cons_manage.h">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
 		<Unit filename="src/connection.c">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src/connection.h" />
+		<Unit filename="src/cons_manage.c">
+			<Option compilerVar="CC" />
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="src/cons_manage.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="src/main.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -48,6 +48,9 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="src/utils.h" />
+		<Unit filename="tests/main.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />

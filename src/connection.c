@@ -123,14 +123,19 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     if(pkt_copy(co->lastPktRecv, pkt)==-1){err "co_handle_new_pkt() : Unable to copy the packet" ner}
     if(pkt_get_tr(pkt))
     {
-        err "co_handle_new_pkt() : truncated packet" ner
+        prt(RED "co_handle_new_pkt() : truncated packet" ne
+        if(co_send_req(co)==-1)
+            err "handle_reception() : Unable to send packet" ne
+        return -1;
     }
     const uint8_t sn = pkt_get_seqnum(pkt);
     bool goodSn = co->reqSeqnum <= sn && sn < (int)co->reqSeqnum + MAX_WINDOW_SIZE;
     goodSn = goodSn || (co->reqSeqnum <= (int)sn+0x100 && (int)sn+0x100 < (int)co->reqSeqnum + MAX_WINDOW_SIZE);
     if(!goodSn)
     {
-        err "co_handle_new_pkt() : beyond window size" ner
+        prt(RED "co_handle_new_pkt() : beyond window size" ne
+        if(co_send_req(co)==-1)
+            err "handle_reception() : Unable to send packet" ne
         return -1;
     }
 

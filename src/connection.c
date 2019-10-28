@@ -126,7 +126,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     goodSn = goodSn || (co->reqSeqnum <= (int)sn+0x100 && (int)sn+0x100 < (int)co->reqSeqnum + MAX_WINDOW_SIZE);
     if(!goodSn)
     {
-        //err "co_handle_new_pkt() : beyond window size" ner
+        err "co_handle_new_pkt() : beyond window size" ner
         return -1;
     }
 
@@ -178,7 +178,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
         pkt_t *buf = co->win[ind];
         if(!buf)
             break;
-        //printf(GREEN"Writing seqnum "CYAN"%d"GREEN" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
+        printf(GREEN"Writing seqnum "CYAN"%d"GREEN" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
         if(write_bytes(f, pkt_get_payload(buf), pkt_get_length(buf))==-1){
             err "co_handle_new_pkt() : write" ner
         }
@@ -228,7 +228,7 @@ int co_send_req(co_t* co)
 
     /*size_t n = */send_pkt(sock, pSend, co->addr, co->addrSize);
     co->timeLastPkt = millis();
-    printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
+    //printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
 
     pkt_del(co->lastPktSend);
 

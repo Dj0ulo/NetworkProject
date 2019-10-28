@@ -26,10 +26,32 @@ typedef struct addrinfo ADDRINFO;
 typedef struct in6_addr IN6_ADDR;
 typedef struct timeval TIMEVAL;
 
+/*
+ *  Print une adresse pour debug
+ */
 void print_sockaddr_in6(const SOCKADDR_IN6 *sin6);
+
+/*
+ *  Met un socket en mode non bloquanr
+ */
 void set_socket_non_blocking(SOCKET sock);
+
+/*
+ *  Bind le socket avec un nom d'hote et un port
+ *  @return l'adresse correspondante
+ */
 SOCKADDR_IN6 bind_socket(SOCKET *sock, const char * hostname, const char * port);
+
+/*
+ *  Recoit le packet en attente sur le socket et écrit l'adresse du client dans from
+ *  @return le packet
+ */
 pkt_t* recv_pkt(SOCKET sock, SOCKADDR_IN6** from, socklen_t *fromSize);
+
+/*
+ *  Envoie le packet pkt sur le socket à l'adresse du client to
+ *  @return le nombre d'octet envoyé
+ */
 size_t send_pkt(SOCKET sock, const pkt_t *pkt,const SOCKADDR_IN6* to, const socklen_t toSize);
 
 

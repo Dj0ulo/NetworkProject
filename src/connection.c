@@ -9,9 +9,6 @@ extern char *FORMAT;
 
 int co_reset(co_t* co, const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 {
-    co->filename = calloc(1,1);
-    if(!co->filename)
-        return -1;
     co->addr = malloc(addrSize);
     if(!co->addr)
         return -1;
@@ -23,12 +20,15 @@ int co_reset(co_t* co, const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 
     pkt_del(co->lastPktRecv);
     co->lastPktRecv = pkt_new();
-    co->timeStart = millis();
-    co->bytesWrote = 0;
 
     pkt_del(co->lastPktSend);
     co->lastPktSend = pkt_new();
     co->reqSeqnum = 0;
+
+    co->timeStart = millis();
+    co->bytesWrote = 0;
+    co->file = -1;
+    co->offBigBuf = 0;
 
     co->winOffset = 0;
     co->gotNULL = false;
@@ -38,8 +38,6 @@ void co_free(co_t *co)
 {
     if(co)
     {
-        if(co->filename)
-            free(co->filename);
         if(co->addr)
             free(co->addr);
 
@@ -118,6 +116,12 @@ void print_window(const co_t* co)
 }
 int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
 {
+    if(pkt == NULL){
+        prt(RED  "co_handle_new_pkt() : Packet unconsistent received\n" ne
+        if(co_send_req(co)==-1)
+            prt(RED  "co_handle_new_pkt() : Unable to send packet" ne
+        return -1;
+    }
     pkt_del(co->lastPktRecv);
 
     if(pkt_copy(co->lastPktRecv, pkt)==-1){err "co_handle_new_pkt() : Unable to copy the packet" ner}
@@ -149,35 +153,29 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     if(pkt_copy(co->win[indRcv%MAX_WINDOW_SIZE], pkt)==-1)
         return -1;
 
-    bool newCo = false;
     //ouverture fichier
-    if(strcmp(co->filename,"") == 0)
+    if(co->file == -1)
     {
-        newCo = true;
         if(!FORMAT)
         {
             char format[] = "file_recv_%d.dat";
             FORMAT = malloc(strlen(format)+1);
             if(!FORMAT) {
-                err "co_handle_new_pkt() : allocating FORMAT" ner
+                err "co_handle_new_pkt() : allocating FORMAT" ne
             }
-            strcpy(FORMAT, format);
+            else{
+                strcpy(FORMAT, format);
+            }
         }
-
-        co->filename = realloc(co->filename, strlen(FORMAT)+NB_MAX_CHAR_UINT32);
-        if(!co->filename){
-            err "co_handle_new_pkt() : malloc" ner
-        }
-
+        char filename[strlen(FORMAT)+NB_MAX_CHAR_UINT32];
         int i=0;
         do{
-            sprintf(co->filename, FORMAT, i);
+            sprintf(filename, FORMAT, i);
             i++;
-        }while(access(co->filename, F_OK ) != -1);
+        }while(access(filename, F_OK ) != -1);
+        co->file = open(filename, O_WRONLY | O_CREAT | O_APPEND, S_IRWXU);
+        if(co->file==-1){err "co_handle_new_pkt() : Failed to open file\n" ne}
     }
-    int f = open(co->filename, O_WRONLY | O_CREAT | O_APPEND, S_IRWXU);
-    if(f==-1){err "co_handle_new_pkt() : Failed to open file\n" ner}
-
 
     //ecriture
     int i=0;
@@ -187,33 +185,39 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
         pkt_t *buf = co->win[ind];
         if(!buf)
             break;
-        prt(GREEN"Writing seqnum "CYAN"%d"WHITE" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
-        ssize_t bw = write_bytes(f, pkt_get_payload(buf), pkt_get_length(buf));
-        co->bytesWrote += bw;
+
+        //speed
+        const ssize_t len = pkt_get_length(buf);//
+        co->bytesWrote += len;
         float speed = co->bytesWrote*1000.0/((float)millis()-co->timeStart);
         prt(RED"%.2f Ko "WHITE"Speed %.2f KB/s\n"WHITE,(float)co->bytesWrote/1024.0,speed/1000.0);
-        if(bw==-1){
-            err "co_handle_new_pkt() : write" ner
+
+        //writing
+        if(co->offBigBuf + len >= SIZE_BIG_BUF){
+            write_bytes(co->file, co->bigBuf, co->offBigBuf);
+            co->offBigBuf = 0;
         }
+        memcpy(co->bigBuf + co->offBigBuf, pkt_get_payload(buf), len);
+        co->offBigBuf += len;
+
         pkt_del(co->win[ind]);
         free(co->win[ind]);
         co->win[ind] = NULL;
         co->reqSeqnum++;
     }
     co->winOffset = (co->winOffset+i)%MAX_WINDOW_SIZE;
-    if(close(f)==-1)
-        return -1;
-    //print_window(co);
+    print_window(co);
 
     if(pkt_get_length(pkt)==0)
         co->gotNULL = true;
-    bool isLastOfWindow = true;//pkt_get_seqnum(co->lastPktSend) + pkt_get_window(co->lastPktSend) - 1 == pkt_get_seqnum(pkt);
-    if(isLastOfWindow || co->gotNULL || newCo)
-        if(co_send_req(co)==-1)
-            err "handle_reception() : Unable to send packet" ne
-    prt(MAGENTA"_______________________\n\n"WHITE);
+    if(co_send_req(co)==-1)
+        err "handle_reception() : Unable to send packet" ne
+
     if(co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE)
     {
+        write_bytes(co->file, co->bigBuf, co->offBigBuf);//write last bytes
+        close(co->file);
+
         fprintf(stderr,GREEN "Done "WHITE);
         print_sockaddr_in6(co->addr);
         fprintf(stderr,"%.2f KB in %.3f sec - av. speed %.2f Ko/s\n",co->bytesWrote/1024.0f,(millis()-co->timeStart)/1000.0f,
@@ -237,13 +241,15 @@ int co_send_req(co_t* co)
 
     pkt_set_seqnum(pSend, co->reqSeqnum);
 
-    pkt_set_window(pSend, co_win_nb_hole(co));
+    //pkt_set_window(pSend, co_win_nb_hole(co));
+    pkt_set_window(pSend, MAX_WINDOW_SIZE);
     prt("Win hole : %d\n", pkt_get_window(pSend));
     pkt_set_timestamp(pSend, pkt_get_timestamp(co->lastPktRecv));
 
     size_t n = send_pkt(sock, pSend, co->addr, co->addrSize);
     co->timeLastPkt = millis();
-    prt(YELLOW"SEND : \n%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
+    prt(YELLOW"SEND : \n%ld"WHITE" bytes sent ! (%dACK: "CYAN"%d"WHITE")\n",n,pkt_get_tr(co->lastPktRecv), co->reqSeqnum);
+
 
     pkt_del(co->lastPktSend);
 

@@ -62,24 +62,30 @@ int handle_reception()
     SOCKADDR_IN6 *from = NULL;
     socklen_t fromSize;
     pkt_t *pRec = recv_pkt(sock, &from, &fromSize);
-    if(pRec!=NULL)
+
+    int indClient = get_index_client(from, fromSize);
+    prt("Connection : "YELLOW"%d - "WHITE,indClient);
+    print_sockaddr_in6(from);
+
+
+    if(indClient == -1 && pkt_get_seqnum(pRec)!=0)
     {
-        int indClient = get_index_client(from, fromSize);
-        prt("Connection : "YELLOW"%d - "WHITE,indClient);
-        print_sockaddr_in6(from);
-
-
+        err "Not for me (New connection and seqnum != 0)" ne
+        ret = -1;
+    }
+    else
+    {
         pkt_print(pRec);
-
         if(indClient == -1){
             indClient = add_connection(from, fromSize);
             fprintf(stderr,"New connection id : %d\n", indClient);
         }
         if(indClient != -1)
         {
-            int r = co_handle_new_pkt(cons[indClient],pRec);
-            if(r == -1)
-                err "handle_reception() : Unable to handle new packet" ne
+            int r = co_handle_new_pkt(cons[indClient],pRec);//handle new packet
+            if(r == -1){
+                prt(RED"handle_reception() : Unable to handle new packet" ne
+            }
             else if(r == DONE)
             {
                 co_free(cons[indClient]);
@@ -93,15 +99,12 @@ int handle_reception()
             ret = -1;
         }
     }
-    else
-    {
-        err "handle_reception() : Packet unconsistent received\n" ne
-        ret = -1;
-    }
+
 
     free(from);
     pkt_del(pRec);
     free(pRec);
+    prt(MAGENTA"____________RCV-END___________\n\n"WHITE);
     return ret;
 }
 void check_times_out()
@@ -109,7 +112,7 @@ void check_times_out()
     for(int i=0;i<NB_CONNECTIONS;i++)
     {
         if(cons[i] && cons[i]->lastPktRecv && co_is_timeout(cons[i])){
-            fprintf(stderr,RED"TIMEOUT : "WHITE);
+            prt(RED"TIMEOUT : "WHITE);
             print_sockaddr_in6(cons[i]->addr);
             co_send_req(cons[i]);
         }

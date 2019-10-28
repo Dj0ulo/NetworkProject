@@ -20,16 +20,27 @@ typedef uint8_t bool;
 
 #define MAX_FILENAME 260
 
-#define prt if(false) printf
+#define per fprintf(stderr,
+#define prt if(doPrint) printf
 #define err fprintf(stderr, RED "[Error] "
 #define ne WHITE"\n");
 #define ner ne; return -1;
 
 #define NB_MAX_CHAR_UINT32 10 //2 ^ 32 = 4,294,967,296 => 10 digits
 
+extern bool doPrint;
+
+/*
+ *  Utilitaires de débogage
+ */
 bool getBit(uint16_t n, uint8_t index);
 void printBits(uint16_t n);
 void printHex(const uint8_t *bytes, size_t len);
+
+/*
+ *  Ecrit l'integralité d'un tableau d'octet (bytes) de taille size dans le fichier fd
+ *  @return la taille si tout s'est bien déroulé, -1 sinon
+ */
 int write_bytes(int fd, const char* bytes, const size_t size);
 void startClock();
 time_t millis();

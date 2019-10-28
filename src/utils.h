@@ -20,6 +20,7 @@ typedef uint8_t bool;
 
 #define MAX_FILENAME 260
 
+#define prt if(false) printf
 #define err fprintf(stderr, RED "[Error] "
 #define ne WHITE"\n");
 #define ner ne; return -1;

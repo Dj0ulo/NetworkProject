@@ -24,22 +24,23 @@ void pkt_del(pkt_t *pkt)
 
 void pkt_print(const pkt_t* pkt)
 {
-    printf("---" GREEN "Print packet" WHITE "---\n");
-    if(!pkt)
-        printf("(NULL)\n");
-    else{
-        printf("seqnum : " CYAN "%d" WHITE, pkt_get_seqnum(pkt));
-        printf(" | type : %d | ", pkt_get_type(pkt));
-        printf("tr : %d | ", pkt_get_tr(pkt));
-        printf("window : %d | ", pkt_get_window(pkt));
-        printf("timestamp : %x\n", pkt_get_timestamp(pkt));
-//        printf("crc1 : 0x%x\n", pkt_get_crc1(pkt));
-        printf("payload (len : " BLUE "%d" WHITE " bytes)", pkt_get_length(pkt));
-        //printf(":\n%s", pkt_get_payload(pkt));
-        printf("\n");
-//        printf("crc2 : 0x%x\n", pkt_get_crc2(pkt));
+    prt("---" GREEN "Print packet" WHITE "---\n");
+    if(!pkt){
+        prt("(NULL)\n");
     }
-    printf("------------------\n");
+    else{
+        prt("seqnum : " CYAN "%d" WHITE, pkt_get_seqnum(pkt));
+        prt(" | type : %d | ", pkt_get_type(pkt));
+        prt("tr : %d | ", pkt_get_tr(pkt));
+        prt("window : %d | ", pkt_get_window(pkt));
+        prt("timestamp : %x\n", pkt_get_timestamp(pkt));
+//        prt("crc1 : 0x%x\n", pkt_get_crc1(pkt));
+        prt("payload (len : " BLUE "%d" WHITE " bytes)", pkt_get_length(pkt));
+        //prt(":\n%s", pkt_get_payload(pkt));
+        prt("\n");
+//        prt("crc2 : 0x%x\n", pkt_get_crc2(pkt));
+    }
+    prt("------------------\n");
 }
 int pkt_copy(pkt_t* dst, const pkt_t* src)
 {

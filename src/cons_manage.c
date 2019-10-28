@@ -65,7 +65,7 @@ int handle_reception()
     if(pRec!=NULL)
     {
         int indClient = get_index_client(from, fromSize);
-        printf("Connection : "YELLOW"%d - "WHITE,indClient);
+        prt("Connection : "YELLOW"%d - "WHITE,indClient);
         print_sockaddr_in6(from);
 
 
@@ -73,7 +73,7 @@ int handle_reception()
 
         if(indClient == -1){
             indClient = add_connection(from, fromSize);
-            printf("New connection id : %d\n", indClient);
+            fprintf(stderr,"New connection id : %d\n", indClient);
         }
         if(indClient != -1)
         {

@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 		}
 		else if(ready == 0)
         {
-            printf("Wait before exit : %d\n",wait);
+            printf("Waiting before exit : %d\n",wait);
             wait--;
             //fprintf(stderr,CYAN"Time : %ld s.\n"WHITE, millis()/1000);//fprintf(stderr,".");
         }

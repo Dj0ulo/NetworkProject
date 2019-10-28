@@ -23,6 +23,8 @@ int co_reset(co_t* co, const SOCKADDR_IN6 *addr,const socklen_t addrSize)
 
     pkt_del(co->lastPktRecv);
     co->lastPktRecv = pkt_new();
+    co->timeStart = millis();
+    co->bytesWrote = 0;
 
     pkt_del(co->lastPktSend);
     co->lastPktSend = pkt_new();
@@ -178,8 +180,12 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
         pkt_t *buf = co->win[ind];
         if(!buf)
             break;
-        printf(GREEN"Writing seqnum "CYAN"%d"GREEN" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
-        if(write_bytes(f, pkt_get_payload(buf), pkt_get_length(buf))==-1){
+        printf(GREEN"Writing seqnum "CYAN"%d"WHITE" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
+        ssize_t bw = write_bytes(f, pkt_get_payload(buf), pkt_get_length(buf));
+        co->bytesWrote += bw;
+        float speed = co->bytesWrote*1000.0/((float)millis()-co->timeStart);
+        printf(RED"%.2f Ko "WHITE"Speed %.2f KB/s\n"WHITE,(float)co->bytesWrote/1000.0,speed/1000.0);
+        if(bw==-1){
             err "co_handle_new_pkt() : write" ner
         }
         pkt_del(co->win[ind]);
@@ -198,11 +204,12 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     if(isLastOfWindow || co->gotNULL || newCo)
         if(co_send_req(co)==-1)
             err "handle_reception() : Unable to send packet" ne
-    //printf(MAGENTA"_______________________\n\n"WHITE);
+    printf(MAGENTA"_______________________\n\n"WHITE);
     if(co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE)
     {
         fprintf(stderr, GREEN"Done with : "WHITE);
         print_sockaddr_in6(co->addr);
+        printf("%.3f sec\n",(millis()-co->timeStart)/1000.0f);
         return DONE;
     }
 
@@ -223,12 +230,12 @@ int co_send_req(co_t* co)
     pkt_set_seqnum(pSend, co->reqSeqnum);
 
     pkt_set_window(pSend, co_win_nb_hole(co));
-    //printf("Win hole : %d\n", pkt_get_window(pSend));
+    printf("Win hole : %d\n", pkt_get_window(pSend));
     pkt_set_timestamp(pSend, pkt_get_timestamp(co->lastPktRecv));
 
-    /*size_t n = */send_pkt(sock, pSend, co->addr, co->addrSize);
+    size_t n = send_pkt(sock, pSend, co->addr, co->addrSize);
     co->timeLastPkt = millis();
-    //printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
+    printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
 
     pkt_del(co->lastPktSend);
 

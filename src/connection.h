@@ -21,7 +21,8 @@ struct Connection
     uint8_t winOffset;
 
     pkt_t* lastPktRecv, *lastPktSend;
-    time_t timeLastPkt;
+    time_t timeLastPkt, timeStart;
+    size_t bytesWrote;
 
     bool gotNULL;
 };

@@ -26,11 +26,11 @@ void print_sockaddr_in6(const SOCKADDR_IN6 *sin6)
 void set_socket_non_blocking(SOCKET sock){
     int opts = fcntl(sock,F_GETFL);
 	if (opts < 0) {
-		perror("fcntl(F_GETFL)");
+		fprintf(stderr,"fcntl(F_GETFL)");
 		exit(EXIT_FAILURE);
 	}
 	if (fcntl(sock, F_SETFL, opts | O_NONBLOCK) < 0) {
-		perror("fcntl(F_SETFL)");
+		fprintf(stderr,"fcntl(F_SETFL)");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -88,18 +88,18 @@ pkt_t* recv_pkt(SOCKET sock, SOCKADDR_IN6** from, socklen_t *fromSize)
 
     char buffer[MAX_PACKET_SIZE];
     if((n = recvfrom(sock, buffer, MAX_PACKET_SIZE, 0, (SOCKADDR *)&recv_addr, fromSize)) < 0){
-        perror("recvfrom()"); exit(errno);
+        fprintf(stderr,"recvfrom()\n"); exit(errno);
     }
     *from = malloc(*fromSize);
     if(!*from){
-        perror("from malloc()"); exit(errno);
+        fprintf(stderr,"Error from malloc()\n"); exit(errno);
     }
     memcpy(*from, &recv_addr, *fromSize);
 
     pkt_t *pRec = pkt_new();
     pkt_status_code r = 0;
     if((r=pkt_decode(buffer, n, pRec))!=PKT_OK){
-        fprintf(stderr,"pkt_decode() : %d",r);
+        fprintf(stderr,"pkt_decode() : %d\n",r);
         pkt_del(pRec);
         free(pRec);
         return NULL;
@@ -114,10 +114,10 @@ size_t send_pkt(SOCKET sock, const pkt_t *pkt,const SOCKADDR_IN6* to, const sock
     size_t len = MAX_PACKET_SIZE;
     pkt_status_code r = 0;
     if((r=pkt_encode(pkt, buffer, &len))!=PKT_OK){
-        fprintf(stderr,"pkt_encode() : %d",r); return -1;
+        fprintf(stderr,"pkt_encode() : %d\n",r); return -1;
     }
     if((n = sendto(sock, buffer, len, 0, (SOCKADDR *)to, toSize)) < 0) {
-        perror("sendto()"); exit(errno);
+        fprintf(stderr,"sendto() : %d\n",r); return -1;
     }
     return (size_t)n;
 }

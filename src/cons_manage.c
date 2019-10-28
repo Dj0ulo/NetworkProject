@@ -65,17 +65,11 @@ int handle_reception()
     if(pRec!=NULL)
     {
         int indClient = get_index_client(from, fromSize);
-//        printf("Connection : "YELLOW"%d - "WHITE,indClient);
-//        print_sockaddr_in6(from);
+        printf("Connection : "YELLOW"%d - "WHITE,indClient);
+        print_sockaddr_in6(from);
 
-//    if(rand()%4==0){
-//        fprintf(stderr,YELLOW "FAKE NOT RECV\n" WHITE);
-//        free(from);
-//        pkt_del(pRec);
-//        return 0;
-//    }
 
-        //pkt_print(pRec);
+        pkt_print(pRec);
 
         if(indClient == -1){
             indClient = add_connection(from, fromSize);
@@ -85,7 +79,7 @@ int handle_reception()
         {
             int r = co_handle_new_pkt(cons[indClient],pRec);
             if(r == -1)
-                ;//err "handle_reception() : Unable to handle new packet" ne
+                err "handle_reception() : Unable to handle new packet" ne
             else if(r == DONE)
             {
                 co_free(cons[indClient]);
@@ -101,7 +95,7 @@ int handle_reception()
     }
     else
     {
-        //err "handle_reception() : Packet unconsistent received\n" ne
+        err "handle_reception() : Packet unconsistent received\n" ne
         ret = -1;
     }
 

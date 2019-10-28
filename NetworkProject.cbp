@@ -22,6 +22,7 @@
 		<Linker>
 			<Add library="C:/Program Files (x86)/CodeBlocks/MinGW/lib/libwsock32.a" />
 		</Linker>
+		<Unit filename="Makefile" />
 		<Unit filename="src/connection.c">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -51,6 +52,7 @@
 		<Unit filename="tests/main.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="tests/makefile" />
 		<Extensions>
 			<code_completion />
 			<envvars />

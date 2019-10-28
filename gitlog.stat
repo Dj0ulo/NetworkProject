@@ -1,0 +1,210 @@
+commit 3a5ebc8914a1a9085be9400400be6c7ada503c49
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Tue Oct 22 17:42:23 2019 +0200
+
+    Tests
+
+ Makefile                    |  14 +++++--
+ NetworkProject.cbp          |  15 ++++---
+ NetworkProject.layout       |  41 ++++++++++---------
+ projet1_launois_fichere.zip | Bin 0 -> 30876 bytes
+ rapport.pdf                 | Bin 0 -> 15494 bytes
+ receiver                    | Bin 52552 -> 55480 bytes
+ ref/fichierrecu0            |   0
+ src/main.c                  |   8 ++--
+ src/utils.h                 |   2 +
+ tests/input/file            |   1 +
+ tests/input/pi              |   1 +
+ tests/input/txt             |  67 +++++++++++++++++++++++++++++++
+ tests/main.c                |  96 ++++++++++++++++++++++++++++++++++++++++++++
+ tests/makefile              |   7 ++++
+ tests/sender                | Bin 0 -> 35024 bytes
+ tests/test                  | Bin 0 -> 18704 bytes
+ 16 files changed, 220 insertions(+), 32 deletions(-)
+
+commit ceb07ad3f152eaa9685fb5f5d631bf82bcf91fc9
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 21 15:17:42 2019 +0200
+
+    Fixed memory leaks
+    
+    Valgrind dit encore 2 erreurs car je teste si payload == NULL après l'avoir déjà free, il vaudrait mieux qu'il pointe tjrs vers quelque chose et je ne le free que a la fin
+
+ Makefile              |   1 +
+ NetworkProject.layout |  41 ++++++++++++---------------
+ receiver              | Bin 33080 -> 52552 bytes
+ src/connection.c      |  31 +++++++++++++++++----
+ src/cons_manage.c     |  75 +++++++++++++++++++++++++++++++++-----------------
+ src/main.c            |  35 ++++++++++++-----------
+ src/packet.c          |  27 +++++-------------
+ src/socket.c          |   1 +
+ 8 files changed, 119 insertions(+), 92 deletions(-)
+
+commit ea46a2214829d3dcc03b957efeb69e5eb4bc9e70
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 20 11:39:58 2019 +0200
+
+    Bug fixed
+    
+    bug fixed when multiple clients
+
+ NetworkProject.cbp    |  25 ++++++++++++-------------
+ NetworkProject.layout |  46 ++++++++++++++++++++++++++++------------------
+ receiver              | Bin 33080 -> 33080 bytes
+ src/cons_manage.c     |   9 ++++-----
+ 4 files changed, 44 insertions(+), 36 deletions(-)
+
+commit 106288684d6605ba924a3b87bbccc75aa255ceb0
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 20 00:21:02 2019 +0200
+
+    Up
+
+ receiver          | Bin 33104 -> 33080 bytes
+ src/cons_manage.c |   4 ++--
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit a4218f9d7dce341cbe6c60598980b5f5f921d62d
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 20 00:19:48 2019 +0200
+
+    Almost done
+    
+    pkt from many source and not ordered
+
+ #packet_implem.c#                  | 322 -------------------------------------
+ .gitignore                         |   2 -
+ Makefile                           |  36 +++--
+ NetworkProject.cbp                 |  23 ++-
+ NetworkProject.layout              |  38 +++--
+ connexion.c                        | 137 ----------------
+ connexion.h                        |  25 ---
+ error inginious.txt                |  11 --
+ receiver                           | Bin 0 -> 33104 bytes
+ ref/pi                             |   1 +
+ ref/receiver                       | Bin 0 -> 40416 bytes
+ src/connection.c                   | 217 +++++++++++++++++++++++++
+ src/connection.h                   |  40 +++++
+ src/cons_manage.c                  |  99 ++++++++++++
+ src/cons_manage.h                  |  13 ++
+ main.c => src/main.c               |  74 ++++-----
+ packet_implem.c => src/packet.c    |  45 ++++--
+ packet_interface.h => src/packet.h |  25 ++-
+ socket.c => src/socket.c           |  12 ++
+ socket.h => src/socket.h           |   3 +-
+ src/utils.c                        |  47 ++++++
+ utils.h => src/utils.h             |  14 +-
+ utils.c                            |  58 -------
+ 23 files changed, 581 insertions(+), 661 deletions(-)
+
+commit 61fe22c7e2c84b027a5fcf2d5b9c7cedd5310b04
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Thu Oct 17 20:35:09 2019 +0200
+
+    Begin implementation, multiple connexions with multiple packets
+
+ #packet_implem.c#       | 322 ++++++++++++++++++++++++++++++++++++++++++++++++
+ .gitignore              |   2 +
+ connexion.c             | 137 ++++++++++++++++++++
+ connexion.h             |  25 ++++
+ dissector-LINGI1341.lua |  46 +++++++
+ main.c                  |  16 ++-
+ packet_implem.c         |   8 --
+ packet_interface.h      |   2 +-
+ ref/fichierrecu0        |   0
+ ref/file                |   1 +
+ ref/sender              | Bin 0 -> 35024 bytes
+ ref/txt                 |  67 ++++++++++
+ utils.c                 |  39 +++---
+ utils.h                 |  15 +++
+ 14 files changed, 647 insertions(+), 33 deletions(-)
+
+commit b9d17d9c8e6c20e7d19595c79aad5d6afa85ca4f
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Wed Oct 16 02:35:25 2019 +0200
+
+    Receive and send packets
+
+ Makefile              |  10 ++-
+ NetworkProject.cbp    |  13 ++++
+ NetworkProject.layout |  28 ++++++--
+ main.c                | 185 +++++++++++++++++++++++++++++++++-----------------
+ packet_implem.c       |  17 +++--
+ socket.c              | 110 ++++++++++++++++++++++++++++++
+ socket.h              |  35 ++++++++++
+ utils.c               |  55 +++++++++++++++
+ utils.h               |  13 ++++
+ 9 files changed, 394 insertions(+), 72 deletions(-)
+
+commit b4aee092538c60c52b0f3e540136174511b0e755
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 13 18:12:03 2019 +0200
+
+    getopt
+
+ .gitignore            |  4 ++++
+ NetworkProject.cbp    |  7 +++++++
+ NetworkProject.layout | 12 +++++++++++-
+ main.c                | 42 +++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 63 insertions(+), 2 deletions(-)
+
+commit ee3e3d87705d7e28ed1ed8f56523ef0b6eaeb9ab
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 6 14:54:14 2019 +0200
+
+    packet implem done
+
+ .gitignore      |  4 ++++
+ Makefile        | 16 ++++++++++++++++
+ main.c          | 47 +++++++++++++++++++++++++++++++++--------------
+ packet_implem.c | 43 ++++++++++++++++++++++++-------------------
+ 4 files changed, 77 insertions(+), 33 deletions(-)
+
+commit 7a5e34b624f81804c9e784483834168b1b5f4609
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 6 00:23:26 2019 +0200
+
+    net-endian crc
+
+ main.c          |  5 ++---
+ packet_implem.c | 14 ++++++++++----
+ 2 files changed, 12 insertions(+), 7 deletions(-)
+
+commit 3af13c253a2b4cab5a7a68503a96c2a0ed309811
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sun Oct 6 00:13:39 2019 +0200
+
+    edit packet_implem after first test inginious
+
+ .gitignore          |  3 +++
+ error inginious.txt | 11 +++++++++++
+ main.c              | 27 ++++++++++++++++++++++-----
+ packet_implem.c     | 46 ++++++++++++++++++++++++++++------------------
+ packet_interface.h  |  1 +
+ 5 files changed, 65 insertions(+), 23 deletions(-)
+
+commit 2b0cc137be5bbd5bdbf96644f8487bf7f23959d0
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sat Oct 5 23:14:40 2019 +0200
+
+    Working on packet_implem
+
+ .gitignore         |   5 ++
+ main.c             |  31 +++++++++++
+ packet_implem.c    | 157 ++++++++++++++++++++++++++++++++++++++++++++++-------
+ packet_interface.h |   5 +-
+ 4 files changed, 177 insertions(+), 21 deletions(-)
+
+commit 65fe25a4ae7afce802fb6dcb2de5ecc1de4304be
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Sat Oct 5 18:07:38 2019 +0200
+
+    Initial commit
+
+ .gitattributes        |   2 +
+ NetworkProject.cbp    |  32 +++++++++
+ NetworkProject.layout |  10 +++
+ main.c                |   8 +++
+ packet_implem.c       | 187 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ packet_interface.h    | 177 +++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 416 insertions(+)

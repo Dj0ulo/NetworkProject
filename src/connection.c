@@ -122,7 +122,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
         err "co_handle_new_pkt() : truncated packet" ner
     }
     const uint8_t sn = pkt_get_seqnum(pkt);
-    if(sn >= (co->reqSeqnum + MAX_WINDOW_SIZE)%0x100 || sn<co->reqSeqnum)
+    if((int)sn >= ((int)co->reqSeqnum + MAX_WINDOW_SIZE) || sn<co->reqSeqnum)
     {
         err "co_handle_new_pkt() : beyond window size" ner
     }

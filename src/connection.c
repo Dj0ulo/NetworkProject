@@ -122,9 +122,12 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
         err "co_handle_new_pkt() : truncated packet" ner
     }
     const uint8_t sn = pkt_get_seqnum(pkt);
-    if((int)sn >= ((int)co->reqSeqnum + MAX_WINDOW_SIZE) || sn<co->reqSeqnum)
+    bool goodSn = co->reqSeqnum <= sn && sn < (int)co->reqSeqnum + MAX_WINDOW_SIZE;
+    goodSn = goodSn || (co->reqSeqnum <= (int)sn+0x100 && (int)sn+0x100 < (int)co->reqSeqnum + MAX_WINDOW_SIZE);
+    if(!goodSn)
     {
-        err "co_handle_new_pkt() : beyond window size" ner
+        //err "co_handle_new_pkt() : beyond window size" ner
+        return -1;
     }
 
     int indRcv = co->winOffset;
@@ -175,7 +178,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
         pkt_t *buf = co->win[ind];
         if(!buf)
             break;
-        printf(GREEN"Writing seqnum "CYAN"%d"GREEN" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
+        //printf(GREEN"Writing seqnum "CYAN"%d"GREEN" (win ind : %d) in %s\n"WHITE, pkt_get_seqnum(buf),ind, co->filename);
         if(write_bytes(f, pkt_get_payload(buf), pkt_get_length(buf))==-1){
             err "co_handle_new_pkt() : write" ner
         }
@@ -187,7 +190,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     co->winOffset = (co->winOffset+i)%MAX_WINDOW_SIZE;
     if(close(f)==-1)
         return -1;
-    print_window(co);
+    //print_window(co);
 
     if(pkt_get_length(pkt)==0)
         co->gotNULL = true;
@@ -195,7 +198,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     if(isLastOfWindow || co->gotNULL || newCo)
         if(co_send_req(co)==-1)
             err "handle_reception() : Unable to send packet" ne
-    printf(MAGENTA"_______________________\n\n"WHITE);
+    //printf(MAGENTA"_______________________\n\n"WHITE);
     if(co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE)
     {
         fprintf(stderr, GREEN"Done with : "WHITE);
@@ -220,12 +223,12 @@ int co_send_req(co_t* co)
     pkt_set_seqnum(pSend, co->reqSeqnum);
 
     pkt_set_window(pSend, co_win_nb_hole(co));
-    printf("Win hole : %d\n", pkt_get_window(pSend));
+    //printf("Win hole : %d\n", pkt_get_window(pSend));
     pkt_set_timestamp(pSend, pkt_get_timestamp(co->lastPktRecv));
 
-    size_t n = send_pkt(sock, pSend, co->addr, co->addrSize);
+    /*size_t n = */send_pkt(sock, pSend, co->addr, co->addrSize);
     co->timeLastPkt = millis();
-    printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
+    //printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
 
     pkt_del(co->lastPktSend);
 

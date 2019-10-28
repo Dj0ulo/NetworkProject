@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
             //fprintf(stderr,CYAN"Time : %ld s.\n"WHITE, millis()/1000);//fprintf(stderr,".");
         }
 		else if(FD_ISSET(sock,&fdSet)){
-            printf("Got something !\n");
+            //printf("Got something !\n");
             handle_reception();
             wait = 6;
 		}

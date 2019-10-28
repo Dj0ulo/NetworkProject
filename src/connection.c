@@ -194,7 +194,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
 
     if(pkt_get_length(pkt)==0)
         co->gotNULL = true;
-    bool isLastOfWindow = pkt_get_seqnum(co->lastPktSend) + pkt_get_window(co->lastPktSend) - 1 == pkt_get_seqnum(pkt);
+    bool isLastOfWindow = true;//pkt_get_seqnum(co->lastPktSend) + pkt_get_window(co->lastPktSend) - 1 == pkt_get_seqnum(pkt);
     if(isLastOfWindow || co->gotNULL || newCo)
         if(co_send_req(co)==-1)
             err "handle_reception() : Unable to send packet" ne
@@ -228,7 +228,7 @@ int co_send_req(co_t* co)
 
     /*size_t n = */send_pkt(sock, pSend, co->addr, co->addrSize);
     co->timeLastPkt = millis();
-    //printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
+    printf(YELLOW"%ld"WHITE" bytes sent ! (need seqnum : "CYAN"%d"WHITE")\n",n, co->reqSeqnum);
 
     pkt_del(co->lastPktSend);
 

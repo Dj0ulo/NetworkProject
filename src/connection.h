@@ -77,6 +77,10 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt);
  */
 int co_send_req(co_t* co);
 
+/*
+ *  Ecrit le big buffer dans le fichier associé à co
+ */
+void co_write_big_buf(co_t* co);
 
 
 #endif // CONNECTION_H_INCLUDED

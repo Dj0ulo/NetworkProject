@@ -68,14 +68,13 @@ int handle_reception()
     print_sockaddr_in6(from);
 
 
-    if(indClient == -1 && pkt_get_seqnum(pRec)!=0)
+    if(indClient == -1 && pRec!=NULL && pkt_get_seqnum(pRec)!=0)
     {
         err "Not for me (New connection and seqnum != 0)" ne
         ret = -1;
     }
     else
     {
-        pkt_print(pRec);
         if(indClient == -1){
             indClient = add_connection(from, fromSize);
             fprintf(stderr,"New connection id : %d\n", indClient);

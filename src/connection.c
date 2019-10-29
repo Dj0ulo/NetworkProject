@@ -122,6 +122,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
             prt(RED  "co_handle_new_pkt() : Unable to send packet" ne
         return -1;
     }
+    pkt_print(pkt);
     pkt_del(co->lastPktRecv);
 
     if(pkt_copy(co->lastPktRecv, pkt)==-1){err "co_handle_new_pkt() : Unable to copy the packet" ner}
@@ -194,8 +195,7 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
 
         //writing
         if(co->offBigBuf + len >= SIZE_BIG_BUF){
-            write_bytes(co->file, co->bigBuf, co->offBigBuf);
-            co->offBigBuf = 0;
+            co_write_big_buf(co);
         }
         memcpy(co->bigBuf + co->offBigBuf, pkt_get_payload(buf), len);
         co->offBigBuf += len;
@@ -213,9 +213,12 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     if(co_send_req(co)==-1)
         err "handle_reception() : Unable to send packet" ne
 
-    if(co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE)
+    if((co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE) || millis() - co->timeLastPkt > TIMEOUT*5)
     {
-        write_bytes(co->file, co->bigBuf, co->offBigBuf);//write last bytes
+        if(millis() - co->timeLastPkt > TIMEOUT*5){
+            fprintf(stderr,RED "Connection lost\n");
+        }
+        co_write_big_buf(co);//write last bytes
         close(co->file);
 
         fprintf(stderr,GREEN "Done "WHITE);
@@ -257,4 +260,9 @@ int co_send_req(co_t* co)
     pkt_del(pSend);
     free(pSend);
     return 0;
+}
+void co_write_big_buf(co_t* co){
+    prt("Write big buff %ld bytes\n", co->offBigBuf);
+    write_bytes(co->file, co->bigBuf, co->offBigBuf);
+    co->offBigBuf = 0;
 }

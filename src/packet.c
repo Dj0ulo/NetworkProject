@@ -6,6 +6,8 @@
 #include <string.h>
 #include <zlib.h>
 
+#include "utils.h"
+extern bool doPrint;
 
 pkt_t* pkt_new()
 {

@@ -84,8 +84,8 @@ int main()
 
     system("chmod +x tests/sender");
 
-   	printf("Test : reception de 3 fichiers en meme temps\n");
-   	system("./tests/sender ::1 13457 -f tests/input/file | ./tests/sender ::1 13457 -f tests/input/txt | ./tests/sender ::1 13457 -f tests/input/pi | ./receiver :: 13457 -o \"file_recv%d.txt\"");
+   	printf("Test : reception de 4 fichiers en meme temps\n");
+   	system("./tests/sender ::1 13457 -f tests/input/file | ./tests/sender ::1 13457 -f tests/input/txt | ./tests/sender ::1 13457 -f tests/input/pi | ./tests/sender ::1 13457 -f \"tests/input/Jokem - Stone Piano.flac\" | ./receiver :: 13457 -t 6 -o \"file_recv%d.txt\"");
 
    	/* Run all tests using the CUnit Basic interface */
    	CU_basic_set_mode(CU_BRM_VERBOSE);

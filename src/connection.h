@@ -6,7 +6,7 @@
 
 #define TIMEOUT 2000
 #define ADDR_MAX_LEN INET6_ADDRSTRLEN
-#define SIZE_BIG_BUF 8*1024*1024
+#define SIZE_BIG_BUF 8000000
 
 #define DONE 1
 
@@ -25,7 +25,7 @@ struct Connection
     uint8_t winOffset;
 
     pkt_t* lastPktRecv, *lastPktSend;
-    time_t timeLastPkt, timeStart;
+    time_t timeLastPkt, timeStart, timeLastPktRcv;
     size_t bytesWrote;
 
     bool gotNULL;

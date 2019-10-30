@@ -17,7 +17,6 @@
 
 SOCKET sock = 0;
 char *FORMAT = NULL;
-bool doPrint = false;
 
 int main(int argc, char *argv[])
 {

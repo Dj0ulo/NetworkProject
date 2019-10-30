@@ -68,7 +68,7 @@ int handle_reception()
     print_sockaddr_in6(from);
 
 
-    if(indClient == -1 && pRec!=NULL && pkt_get_seqnum(pRec)!=0)
+    if(indClient == -1 && (pRec == NULL || (pRec!=NULL && pkt_get_seqnum(pRec)!=0) ) )
     {
         err "Not for me (New connection and seqnum != 0)" ne
         ret = -1;
@@ -112,8 +112,17 @@ void check_times_out()
     {
         if(cons[i] && cons[i]->lastPktRecv && co_is_timeout(cons[i])){
             prt(RED"TIMEOUT : "WHITE);
-            print_sockaddr_in6(cons[i]->addr);
-            co_send_req(cons[i]);
+            if( cons[i]->addr && millis() - cons[i]->timeLastPktRcv>10000){
+                err "Connection lost "WHITE);
+                print_sockaddr_in6(cons[i]->addr);
+                co_free(cons[i]);
+                free(cons[i]);
+                cons[i] = NULL;
+            }
+            else{
+                print_sockaddr_in6(cons[i]->addr);
+                co_send_req(cons[i]);
+            }
         }
     }
 }

@@ -7,6 +7,7 @@
 #include <zlib.h>
 
 #include "utils.h"
+
 extern bool doPrint;
 
 pkt_t* pkt_new()
@@ -18,9 +19,10 @@ void pkt_del(pkt_t *pkt)
 {
     if(pkt)
     {
-        if(pkt->payload)
+        if(pkt->payload){
             free(pkt->payload);
-        //free(pkt);
+            pkt->payload = NULL;
+        }
     }
 }
 

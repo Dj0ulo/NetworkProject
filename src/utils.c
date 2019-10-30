@@ -1,6 +1,7 @@
 #include "utils.h"
 #include <unistd.h>
 
+bool doPrint = false;
 
 bool getBit(uint16_t n, uint8_t index){
     return !!(n & (1u << index));

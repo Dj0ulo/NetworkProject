@@ -26,18 +26,29 @@ int co_reset(co_t* co, const SOCKADDR_IN6 *addr,const socklen_t addrSize)
     co->reqSeqnum = 0;
 
     co->timeStart = millis();
+    co->timeLastPktRcv = millis();
     co->bytesWrote = 0;
     co->file = -1;
     co->offBigBuf = 0;
 
     co->winOffset = 0;
     co->gotNULL = false;
+
+
     return 0;
 }
 void co_free(co_t *co)
 {
     if(co)
     {
+        co_write_big_buf(co);//write last bytes
+        close(co->file);
+
+        fprintf(stderr,GREEN "Done "WHITE);
+        print_sockaddr_in6(co->addr);
+        fprintf(stderr,"%.3f kB in %.3f sec - av. speed %.3f kB/s\n",co->bytesWrote/1000.0f,(millis()-co->timeStart)/1000.0f,
+                (float)co->bytesWrote/(millis()-co->timeStart));
+
         if(co->addr)
             free(co->addr);
 
@@ -116,6 +127,9 @@ void print_window(const co_t* co)
 }
 int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
 {
+    if(co == NULL)
+        return -1;
+    co->timeLastPktRcv = millis();
     if(pkt == NULL){
         prt(RED  "co_handle_new_pkt() : Packet unconsistent received\n" ne
         if(co_send_req(co)==-1)
@@ -188,10 +202,10 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
             break;
 
         //speed
-        const ssize_t len = pkt_get_length(buf);//
+        const ssize_t len = pkt_get_length(buf);
         co->bytesWrote += len;
         float speed = co->bytesWrote*1000.0/((float)millis()-co->timeStart);
-        prt(RED"%.2f Ko "WHITE"Speed %.2f KB/s\n"WHITE,(float)co->bytesWrote/1024.0,speed/1000.0);
+        prt(RED"%.2f kB "WHITE"Speed %.2f kB/s\n"WHITE,(float)co->bytesWrote/1000.0,speed/1000.0);
 
         //writing
         if(co->offBigBuf + len >= SIZE_BIG_BUF){
@@ -213,18 +227,8 @@ int co_handle_new_pkt(co_t* co, const pkt_t* pkt)
     if(co_send_req(co)==-1)
         err "handle_reception() : Unable to send packet" ne
 
-    if((co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE) || millis() - co->timeLastPkt > TIMEOUT*5)
+    if(co->gotNULL && co_win_nb_hole(co) == MAX_WINDOW_SIZE)
     {
-        if(millis() - co->timeLastPkt > TIMEOUT*5){
-            fprintf(stderr,RED "Connection lost\n");
-        }
-        co_write_big_buf(co);//write last bytes
-        close(co->file);
-
-        fprintf(stderr,GREEN "Done "WHITE);
-        print_sockaddr_in6(co->addr);
-        fprintf(stderr,"%.2f KB in %.3f sec - av. speed %.2f Ko/s\n",co->bytesWrote/1024.0f,(millis()-co->timeStart)/1000.0f,
-                co->bytesWrote/1.024f/(millis()-co->timeStart));
         return DONE;
     }
 

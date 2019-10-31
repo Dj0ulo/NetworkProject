@@ -1,3 +1,140 @@
+commit 149b472eb3fd57cb534adba3078d21db2e5341b7
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Wed Oct 30 21:52:03 2019 +0100
+
+    Final (or almost final)
+
+ NetworkProject.layout                |   64 +-
+ rapport.pdf                          |  Bin 15494 -> 123165 bytes
+ src/connection.c                     |   30 +-
+ src/connection.h                     |    4 +-
+ src/cons_manage.c                    |   15 +-
+ src/main.c                           |    1 -
+ src/packet.c                         |    6 +-
+ src/utils.c                          |    1 +
+ tests/input/Jokem - Stone Piano.flac |  Bin 0 -> 15723488 bytes
+ tests/input/file                     |    2 +-
+ tests/input/li.txt                   | 1599 ++++++++++++++++++++++++++++++++++
+ tests/input/music.mp3                |  Bin 4382304 -> 0 bytes
+ tests/main.c                         |    4 +-
+ tests/makefile                       |    6 +-
+ tests/test                           |  Bin 18704 -> 19040 bytes
+ 15 files changed, 1673 insertions(+), 59 deletions(-)
+
+commit a9cfd4e1017540f36b784ff5fb73a0c7130aec69
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Tue Oct 29 15:34:39 2019 +0100
+
+    Seg fault when first truncated
+
+ NetworkProject.layout | 58 ++++++++++++++++++++++++++++++---------------------
+ src/connection.c      | 16 ++++++++++----
+ src/connection.h      |  4 ++++
+ src/cons_manage.c     |  3 +--
+ src/packet.c          |  2 ++
+ 5 files changed, 53 insertions(+), 30 deletions(-)
+
+commit dea0a487491d1291f3eda8ecae2966306018d44b
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 19:37:17 2019 +0100
+
+    Writing in a big buffer and no more directly in a file + comments in header
+
+ receiver          | Bin 55480 -> 62680 bytes
+ ref/file          |   1 -
+ ref/pi            |   1 -
+ ref/receiver      | Bin 40416 -> 40424 bytes
+ ref/sender        | Bin 35024 -> 0 bytes
+ ref/txt           |  67 -------------------------------------------
+ src/connection.c  |  82 ++++++++++++++++++++++++++++------------------------
+ src/connection.h  |  43 +++++++++++++++++++++++++++-
+ src/cons_manage.c |  33 +++++++++++----------
+ src/cons_manage.h |  27 ++++++++++++++++++
+ src/main.c        |  84 ++++++++++++++++--------------------------------------
+ src/socket.c      |  16 +++++------
+ src/socket.h      |  22 ++++++++++++++
+ src/utils.h       |  13 ++++++++-
+ 14 files changed, 197 insertions(+), 192 deletions(-)
+
+commit 53457062610a2eef0f1228d0a0ffb03252648226
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 13:26:38 2019 +0100
+
+    up
+
+ src/connection.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+commit 428c166e30a93e1251e5c9afc61b57720c50af62
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 13:20:18 2019 +0100
+
+    up
+
+ src/connection.c  | 37 ++++++++++++++++++++-----------------
+ src/cons_manage.c |  4 ++--
+ src/main.c        |  2 +-
+ src/packet.c      | 29 +++++++++++++++--------------
+ src/socket.c      | 11 ++++++-----
+ src/utils.h       |  1 +
+ 6 files changed, 45 insertions(+), 39 deletions(-)
+
+commit 72482fb27dbf4ed41a431352e9d88d005f0696da
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 12:52:55 2019 +0100
+
+    Print Speed
+
+ .gitignore        |  1 +
+ src/connection.c  | 19 +++++++++++++------
+ src/connection.h  |  3 ++-
+ src/cons_manage.c | 16 +++++-----------
+ src/socket.c      | 14 +++++++-------
+ 5 files changed, 28 insertions(+), 25 deletions(-)
+
+commit a9cefbfa5b13d86afcecb075e9cbb35e7dce0a9f
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 12:07:24 2019 +0100
+
+    up
+
+ src/connection.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit bd620ad6868c9d89d2627730a6617c9904085e75
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 11:46:27 2019 +0100
+
+    Always send
+
+ src/connection.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+commit 04e2eb1090c14f23861a493d94989fca29dc3f88
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 11:36:00 2019 +0100
+
+    comment prints
+
+ src/connection.c      |  19 +++++++++++--------
+ src/cons_manage.c     |  10 +++++-----
+ src/main.c            |   2 +-
+ tests/input/music.mp3 | Bin 0 -> 4382304 bytes
+ 4 files changed, 17 insertions(+), 14 deletions(-)
+
+commit abdb1bbfccfe47fde218d306b9b3e5411a05cc69
+Author: Dj0ulo <julien.launois@student.uclouvain.be>
+Date:   Mon Oct 28 10:59:23 2019 +0100
+
+    Bug seqnum > 255
+
+ NetworkProject.cbp          |   2 +
+ NetworkProject.layout       |  52 ++++++-----
+ gitlog.stat                 | 210 ++++++++++++++++++++++++++++++++++++++++++++
+ projet1_launois_fichere.zip | Bin 30876 -> 86427 bytes
+ src/connection.c            |   2 +-
+ 5 files changed, 244 insertions(+), 22 deletions(-)
+
 commit 3a5ebc8914a1a9085be9400400be6c7ada503c49
 Author: Dj0ulo <julien.launois@student.uclouvain.be>
 Date:   Tue Oct 22 17:42:23 2019 +0200

@@ -58,6 +58,8 @@ void testPkt()
     free(data);
     pkt_del(pRec);
     pkt_del(pkt);
+    free(pRec);
+    free(pkt);
 }
 
 int main()
@@ -75,7 +77,7 @@ int main()
    	/* add the tests to the suite */
    	/* NOTE - ORDER IS IMPORTANT - MUST TEST fread() AFTER fprintf() */
    	if (
-		(NULL == CU_add_test(pSuite,"Teste l'encodage et le decodage de packets", testPkt))
+		(NULL == CU_add_test(pSuite,GREEN"Encodage et le decodage de packets"WHITE, testPkt))
 		)
    	{
     	CU_cleanup_registry();
@@ -83,10 +85,16 @@ int main()
    	}
 
     system("chmod +x tests/sender");
+    system("chmod +x tests/test");
+    system("chmod +x tests/link_sim");
 
-   	printf("Test : reception de 4 fichiers en meme temps\n");
-   	system("./tests/sender ::1 13457 -f tests/input/file | ./tests/sender ::1 13457 -f tests/input/txt | ./tests/sender ::1 13457 -f tests/input/pi | ./tests/sender ::1 13457 -f \"tests/input/Jokem - Stone Piano.flac\" | ./receiver :: 13457 -t 6 -o \"file_recv%d.txt\"");
-
+   	printf(GREEN"Test"WHITE" : reception de "RED"4"WHITE" fichiers en meme temps\n");
+   	system("./tests/sender ::1 64500 -f tests/input/file | ./tests/sender ::1 64500 -f tests/input/txt "
+           "| ./tests/sender ::1 64500 -f tests/input/pi | ./tests/sender ::1 64500 -f tests/input/li.txt "
+           "| ./receiver :: 64500 -t 6 -o \"file_recv%d.txt\"");
+    printf(GREEN"Test"WHITE" : reception d'un fichier avec un taux de "RED"5 pourcents"WHITE" d'"BLUE"erreurs"WHITE
+           ", de "BLUE"packets tronques"WHITE" et de "BLUE"pertes"WHITE" + "RED"100 ms"WHITE" de latence avec "RED"100 ms"WHITE" de variation (CRTL + V quand c'est fini)\n");
+    system("./tests/link_sim -p 64500 -P 64600 -e 5 -c 5 -l 5 -d 100 -j 100 | ./tests/sender ::1 64500 -f tests/input/txt | ./receiver :: 64600 -t 6 -o \"file_erreur5%d.txt\"");
    	/* Run all tests using the CUnit Basic interface */
    	CU_basic_set_mode(CU_BRM_VERBOSE);
    	CU_basic_run_tests();
